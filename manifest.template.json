@@ -1,0 +1,25 @@
+{
+  "game": "Super Monkey Ball: Touch & Roll / Super Monkey Ball DS",
+  "platform": "Nintendo DS",
+  "region": "USA",
+  "project_name": "Touch & Roll Stage Editor",
+  "project_goal": "Reverse-engineer stage assets and build a functional custom stage editor.",
+  "status_note": "Format understanding is still in progress; verify all suspected fields with in-game tests.",
+  "object_taxonomy": [
+    "start_position",
+    "banana",
+    "bumper",
+    "goal",
+    "red_goal",
+    "collision_data",
+    "animated_collision",
+    "animated_object"
+  ],
+  "file_roles": {
+    ".nsbmd": "model",
+    ".nsbtx": "texture",
+    ".nsbca": "animation",
+    ".stc": "stage_data"
+  },
+  "stages": []
+}

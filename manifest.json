@@ -1,0 +1,125 @@
+{
+  "game": "Super Monkey Ball: Touch & Roll / Super Monkey Ball DS",
+  "platform": "Nintendo DS",
+  "region": "USA",
+  "source_root": "C:/Users/ouko_/Documents/Games/Console Emulating stuff/MODIFIERS/NDS/ROM Modding Center/Touch & Roll repo template/data/grouped",
+  "total_stages": 4,
+  "stages": [
+    {
+      "stage_id": "animation",
+      "files": {
+        "animation": "smbds_065/animation.nsbca"
+      },
+      "raw_files": {
+        "nsbca": "smbds_065/animation.nsbca"
+      },
+      "metadata": {
+        "world": null,
+        "difficulty": null,
+        "objects_count": null,
+        "collision_type": null,
+        "notes": "",
+        "verified": false
+      },
+      "file_info": {
+        "animation.nsbca": {
+          "name": "animation.nsbca",
+          "path": "C:/Users/ouko_/Documents/Games/Console Emulating stuff/MODIFIERS/NDS/ROM Modding Center/Touch & Roll repo template/data/grouped/smbds_065/animation.nsbca",
+          "size": 2378,
+          "sha1": "c7ae52d05c4aad00068aa8c44a6b86adfd399064",
+          "role": "animation",
+          "header_hex": "10 94 0f 00 00 42 43 41 30 ff fe 01 00 00 94 0f",
+          "magic_ascii": ".....BCA"
+        }
+      }
+    },
+    {
+      "stage_id": "model",
+      "files": {
+        "model": "smbds_069/model.nsbmd"
+      },
+      "raw_files": {
+        "nsbmd": "smbds_069/model.nsbmd"
+      },
+      "metadata": {
+        "world": null,
+        "difficulty": null,
+        "objects_count": null,
+        "collision_type": null,
+        "notes": "",
+        "verified": false
+      },
+      "file_info": {
+        "model.nsbmd": {
+          "name": "model.nsbmd",
+          "path": "C:/Users/ouko_/Documents/Games/Console Emulating stuff/MODIFIERS/NDS/ROM Modding Center/Touch & Roll repo template/data/grouped/smbds_069/model.nsbmd",
+          "size": 19239,
+          "sha1": "57d0466af56eb20698f050e5c4e16fe57eb2c226",
+          "role": "model",
+          "header_hex": "10 9c 7e 00 00 42 4d 44 30 ff fe 02 00 00 9c 7e",
+          "magic_ascii": "..~..BMD"
+        }
+      }
+    },
+    {
+      "stage_id": "stage",
+      "files": {
+        "stage_data": "smbds_069/stage.stc"
+      },
+      "raw_files": {
+        "stc": "smbds_069/stage.stc"
+      },
+      "metadata": {
+        "world": null,
+        "difficulty": null,
+        "objects_count": null,
+        "collision_type": null,
+        "notes": "",
+        "verified": false
+      },
+      "file_info": {
+        "stage.stc": {
+          "name": "stage.stc",
+          "path": "C:/Users/ouko_/Documents/Games/Console Emulating stuff/MODIFIERS/NDS/ROM Modding Center/Touch & Roll repo template/data/grouped/smbds_069/stage.stc",
+          "size": 148733,
+          "sha1": "385d7971826f718c16c0477c474fd6bb44091109",
+          "role": "stage_data",
+          "header_hex": "10 30 ba 05 01 4c 43 54 53 12 00 00 70 01 08 dc",
+          "magic_ascii": ".0...LCT"
+        }
+      }
+    },
+    {
+      "stage_id": "texture",
+      "files": {
+        "texture": "smbds_069/texture.nsbtx"
+      },
+      "raw_files": {
+        "nsbtx": "smbds_069/texture.nsbtx"
+      },
+      "metadata": {
+        "world": null,
+        "difficulty": null,
+        "objects_count": null,
+        "collision_type": null,
+        "notes": "",
+        "verified": false
+      },
+      "file_info": {
+        "texture.nsbtx": {
+          "name": "texture.nsbtx",
+          "path": "C:/Users/ouko_/Documents/Games/Console Emulating stuff/MODIFIERS/NDS/ROM Modding Center/Touch & Roll repo template/data/grouped/smbds_069/texture.nsbtx",
+          "size": 8948,
+          "sha1": "58b70b61afa1bf2c26919dedb46bc7e481ee1655",
+          "role": "texture",
+          "header_hex": "10 34 2d 00 00 42 54 58 30 ff fe 01 00 00 34 2d",
+          "magic_ascii": ".4-..BTX"
+        }
+      }
+    }
+  ],
+  "notes": [
+    "Do not treat inferred fields as confirmed until in-game testing verifies them.",
+    "The .stc format is still under reverse engineering."
+  ]
+}
