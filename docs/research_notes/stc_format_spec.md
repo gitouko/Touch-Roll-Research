@@ -1,7 +1,8 @@
 # LCTS (`.stc`) stage format — living specification
 
 **Status:** research draft. No byte field has been confirmed by a controlled in-game edit (Level 3+).
-Two meanings are supported by in-game observations reported by the project owner (§9).
+Two meanings are supported by in-game observations reported by the project owner (§9), and several
+structural facts are now backed by the game's own code (§10, "code" in the evidence column).
 **Corpus:** all 187 decompressed `.stc` files (183 unique contents) in `data/raw` at commit
 `4ddcea8c22373730d263639433bdc59448b06060`. Each LZ10 copy in `data/decompressed` and `data/grouped`
 decodes to exactly the matching `data/raw` file (SHA-256), so the three layers hold one corpus.
@@ -38,10 +39,10 @@ All offsets are absolute byte offsets into the **decompressed** stream. All valu
 | 0x08 | u32 | `u32_08` | 0 ×175, 2 ×7, 1 ×1 (`smbds_001`) | E17 | 2 |
 | 0x0C | u32 | `u32_0C` | 0 ×155, 0xA0 ×15, 0x1F40 ×11, 0x12C0 ×2; meaning unknown | — | 1 |
 | 0x10 | u32 | `u32_10` | 28 distinct values (most common 0x3E80, 0x493E00, 0xBB80); meaning unknown | — | 1 |
-| 0x14 | u32 | `u32_14` | always ≥ `group_count` (equal in 158/183); meaning unknown | — | 2 |
+| 0x14 | u32 | `group_count` (N) | number of group descriptors. **Code:** the loader at ARM9 0x02041D40 loops this many times, stepping 0xCC from the address in 0x18 | E04 | 2 + code |
 | 0x18 | u32 | `descriptor_base` (F) | offset of the group-descriptor array (§5); 32-byte aligned in 183/183 | E04 | 2 |
 | 0x1C–0x30 | 6 × Q20.12 | `bounds_min_xyz`, `bounds_max_xyz` | min ≤ max on every axis in 183/183; "bounds" is an inference | E03 | 2 |
-| 0x34 | u32 | `group_count` (N) | 1 ×123, 2 ×24, up to 22 | E04 | 2 |
+| 0x34 | u32 | `u32_34` | ≤ `group_count` in 183/183 (equal in 158); meaning unknown. An earlier draft wrongly treated it as the group count | E21 | 1 |
 | 0x38 | u32 | `start_count` | 1 in 182/183 main-game files; 4 in 12 four-player party stages | E05 | 2 |
 | 0x3C | u32 | `start_offset` | 0xE4 in 180; in `smb1_ad30` and `smbds_029` it equals `align32(F + N·0xCC)`, i.e. the start record sits right after the descriptor array | E05 | 2 |
 | 0x40 | u32 | `pool_a_total` | total records in pool A ("goal" candidate) | E06 | 2 |
@@ -69,9 +70,9 @@ centre — which supports the yaw-angle reading.
 ## 4. Object pools
 
 Each pool is one contiguous array. Its **total** is in the header (§2); each group descriptor
-(§5) references a **slice** `(count, offset)` of it. Slices of different groups are contiguous
-prefixes of the pool in group order (183/183, no overlaps). Records after the last slice are
-**unreferenced** (E10).
+(§5) references a **slice** `(count, offset)` of it. Slices of successive groups are contiguous
+and together cover the whole pool: every record belongs to exactly one group (183/183, no
+overlaps). 2,454 records belong to group 0 (the static stage) and 470 to moving groups (E10).
 
 | Pool | Stride | Layout | Candidate label | Evidence | Level |
 |---|---|---|---|---|---|
@@ -91,18 +92,19 @@ prefixes of the pool in group order (183/183, no overlaps). Records after the la
   "red"** still needs the controlled edit in §8 Q1.
 * **Pool C word +0x0C** is 0 in 2,173 records and 1 in 193 records across 58 files (E12).
   **Reported in-game: 1 = banana bunch worth 5 bananas** (§9).
-* **Unreferenced records** (header total > referenced): `smb1_ad21` (20/20 B), `smb1_ex19` and its
-  duplicate `ex59` (13/13 C), `smb1_ex38` (6/8 C), `smb2_ad10` (1/1 A), `smb2_ex30` (48/48 C),
-  `smb2_ex33` (8/8 C), `smbds_043` (4/10 B), `smbds_054` (1/1 A, 4/12 C). Whether the game shows
-  them is open (§8, Q2).
+* **Correction:** an earlier draft reported "unreferenced records" in 8 files. That was an artifact
+  of reading the group count from 0x34 instead of 0x14: the missing records belong to the extra
+  descriptors. Example: `smb1_ad21` (World 5-6 "Conveyor") has 21 groups — the static stage plus
+  `MOT_bumper01`…`MOT_bumper20`, each owning one of its 20 bumpers.
 * Pools usually start at 0x100 in A→B→C order. The pool after A starts at the next 32-byte
   boundary in 161 of the 162 files where it directly follows A (`smbds_059` packs C right after A); B→C is packed tight in 8 files and
   32-byte aligned in 4. In a few files a pool is placed elsewhere (e.g. `smb1_ad16` pool C after the
   descriptor array). The parser follows offsets and never assumes positions.
 
-## 5. Group descriptors (0xCC bytes each, `N` at F)
+## 5. Group descriptors (0xCC bytes each, N = u32(0x14), base F = u32(0x18))
 
-Previously called the "footer". It is an **array**: descriptor *k* is at `F + k·0xCC` (E04).
+Previously called the "footer". It is an **array**: descriptor *k* is at `F + k·0xCC` (E04). The
+game's loader walks it the same way (§10).
 What older notes called `F+0x90 … F+0xA8` are fields of descriptor 0 only.
 
 | +Offset | Type | Observation | Evidence | Level |
@@ -128,14 +130,14 @@ What older notes called `F+0x90 … F+0xA8` are fields of descriptor 0 only.
 | +0xAC–0xCB | — | zero in 183/183 | E04 | 2 |
 
 Group 0 is named `START…` in 86/183 files and after the stage or model otherwise (`smb1_be02a1`,
-`GOAL`, `NOCOLI_st04a1`, …). Further groups are `MOT_…` in 235 of 245 cases, which suggests animated
-parts; the other 10 are `REACT_…` (9) and `tes1` (1). Objects referenced by a group appear to be positioned in that group's frame
+`GOAL`, `NOCOLI_st04a1`, …). Further groups are `MOT_…` in 387 of 403 cases, which suggests animated
+parts; the rest are `REACT_…` (15) and `tes1` (1). Files have 1–25 groups (104 have one). Objects referenced by a group appear to be positioned in that group's frame
 (inference from `smb2_ad26`, E13).
 
 **Collision:** the +0x74…+0x8C tables, the +0x54 cell table and the cell lists it points to are
 the leading collision candidates. Their record boundaries are partly known; **their contents are
-not decoded**. Across the corpus trcore claims 39.6 % of bytes with views, 9.5 % is zero-fill and
-50.9 % is opaque (mostly these regions).
+not decoded**. Across the corpus trcore claims 40.8 % of bytes with views, 10.9 % is zero-fill and
+48.4 % is opaque (mostly these regions).
 
 ## 6. Layout variants
 
@@ -159,7 +161,9 @@ stage (E20, Level 1).
 | `smbds_001` has 0x3C == 1 | **Confirmed**, explained as variant `no_start_slot` |
 | Start record 0x1C bytes at 0xE4 | **Rejected** — 0x10 bytes plus padding (four-start party stages) |
 | Identity matrix + (0, 0, −46) at 0x100 in `smb1_ad02` | **Confirmed** (pool A record 0) |
-| Q20.12 numeric encoding | **Supported** for matrices, positions and bounds; not for 0x0C/0x10/0x14 |
+| Q20.12 numeric encoding | **Supported** for matrices, positions and bounds; not for 0x0C/0x10 |
+| Group count at 0x34 (this project's own first draft) | **Rejected** — the game loops over u32(0x14) descriptors |
+| Unreferenced object records in 8 files (first draft) | **Rejected** — artifact of the wrong group count |
 | IEEE-754 float candidates (old analyzer) | **Rejected** — on decoded data they are zeros and small integers misread as floats |
 
 ## 8. Open questions and the experiment that settles each
@@ -171,14 +175,16 @@ which files were swapped, and what was seen (screenshot if possible).
   (unused stages). Decisive test, once re-injection works (Q5): in `smb1_be02` (World 8-1) change
   record 1's word from 1 to 0 (decoded offset 0x164) and check whether finishing through that goal
   still counts as a red goal; as a converse, set `smb1_be01`'s goal word to 1.
-* **Q2 — answered** (§9): unreferenced records are spawned. Open part: what the group slices do
-  (hypothesis: attach objects to a moving group).
+* **Q2 — closed.** There are no unreferenced records once the group count is read from 0x14.
+  Open part: confirm that objects in a moving group move with it (hypothesis from E13).
 * **Q3 — answered** (§9): word 1 = bunch. Open part: confirm with one controlled edit.
 * **Q4 — Is `smbds_001` reachable in the game?**
-* **Q5 — Will the game accept a different valid LZ10 encoding of an unchanged file?** Required
-  before any byte edit can be tested. Needs an LZ10 encoder (not yet written).
+* **Q5 — Will the game load stage files we wrote?** trcore's encoder reproduces the original
+  compressed bytes exactly (235/235 stage files), so an unchanged round trip yields a byte-identical
+  ROM. The remaining in-game gate (docs/round_trip_gate.md) checks a *moved* file and a *different*
+  valid encoding, which real edits will need.
 * **Q6 — Collision tables:** decode `smb1_be01` (one group, simple geometry) against its model.
-* **Q7 — Meaning of 0x0C, 0x10, 0x14, `box2`, descriptor +0x58…+0x70.**
+* **Q7 — Meaning of 0x0C, 0x10, 0x34, `box2`, descriptor +0x58…+0x70.**
 
 ## 9. In-game observations reported by the project owner (2026-11-06)
 
@@ -187,11 +193,12 @@ trcore. They raise the *meaning* of a field; they are not controlled byte edits.
 
 | Observation | What it supports |
 |---|---|
-| `smb2_ex30` = World 12 "Mesh Mosh", stage 5 "Protuberance": all bananas appear, although none of its 48 pool C records is in a group slice | Header pool totals drive spawning; slices are not required (E06, E10) |
-| `smb1_ad21` = World 5 "Palarvar Lava", stage 6 "Conveyor": all 20 bumpers appear, none in a slice | same |
+| `smb2_ex30` = World 12 "Mesh Mosh", stage 5 "Protuberance": all 48 banana records appear — exactly 36 singles + 12 bunches = 96 bananas, matching word +0x0C (36 × 0, 12 × 1) | E09, E12; consistent with every record being owned by a group (E10) |
+| `smb1_ad21` = World 5 "Palarvar Lava", stage 6 "Conveyor": all 20 bumpers appear | consistent with E10 (each bumper is in a `MOT_bumperNN` group) |
 | Banana flag: pool C word +0x0C = 1 is a banana **bunch worth 5 bananas** | E12 meaning |
 | Exactly two red goals exist in the game; collecting both (after worlds 7–10) unlocks World 11 "Studio One". `smb1_be02` = World 8, stage 1 "Hollow Diamond" has one. | Context for E11 |
-| "The goal flag is the exact same for both normal and red goals" | Under clarification: whether this means the goal looks identical in-game |
+| Red and normal goals are the same object; the red goal differs only in colour and in counting towards Studio One | E11 remains the leading candidate for the per-goal difference |
+| `smb1_ex03` = World 9 "Big Bang Boom", stage 2 "Converse" (the second red goal) | E11: the two played stages with word +0x30 = 1 are exactly the two red-goal stages |
 | `smb1_ad02` = World 5 stage 2 "Sword". `smb1_ad25`, `smb2_ex29`, `smb2_ad26`, `smb1_ad16`, `smb1_ex19` are not in the game | Stage mapping |
 
 ## 10. ROM provenance and how the game names stage files
@@ -207,13 +214,41 @@ SHA-1 `3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17`, CRC32 `ad0c8379`.
 * The ROM has **235** stage files; the repo has the 187 main-game ones. Not extracted: 48 party-game
   stages (`bowl01-02`, `fight01-03`, `golf01-25`, `race01/02/04/08/09/11`, `surv01-09`,
   `target01-03`). trcore parses all of them without errors.
-* ARM9 (uncompressed) contains a 197-entry table of pointers to stage-name strings at ARM9 file
-  offset 0xC4B4C (RAM 0x020C4B4C), plus the format string `stcoli/%s_stc.lz` at 0xC5370 — very likely
-  how the game builds a stage file name from a stage ID (inference). Code references to the table
-  are at ARM9 offsets 0x41780 and 0x41F60.
-  * 32 names in that table have no file (`smbds_057`, `smbds_070`–`smbds_100`).
-  * 22 stage files are not named in the table, so they cannot be reached by stage ID: `smb1_ad16`,
+* ARM9 (uncompressed; module parameter "compressed static end" = 0) contains a **250-entry** table
+  of pointers to stage-name strings at RAM 0x020C4B4C (`smb1_be01` … `smbds_100`, then the party
+  stages) and the format string `stcoli/%s_stc.lz` at 0x020C5370.
+  * 32 names have no file (`smbds_057`, `smbds_070`–`smbds_100`).
+  * 22 `smb*` stage files are not named in the table, so no stage ID can load them: `smb1_ad16`,
     `smb1_ex46/47/48/52/53/59/61/62/63/64/65/66/68/72`, `smb2_ad16/24/30`, `smb2_ex05/10/14/32`.
-  * Being in the table does **not** mean a stage is played (`smb1_ad25` is in it but unused). The
-    world/stage order table has not been found yet.
 
+## 11. Stage loading in the game code (static analysis, USA ROM)
+
+Addresses are RAM addresses for this ROM; they are recorded in `trcore/rom.py` (`PROFILES`).
+
+| Address | What it is | How it was established |
+|---|---|---|
+| 0x02041774 | `name = stage_names[id]` | 3-instruction function reading the 0x020C4B4C table |
+| 0x02041784 | set requested stage: stores the ID at 0x020E8FD8 | called from the main-game menu code |
+| 0x02041BBC | stage loader: builds `stcoli/%s_stc.lz` from the requested ID, loads it, stores the data pointer at **0x020E9208**, loops u32(0x14) descriptors from u32(0x18) in 0xCC steps, then copies the ID to **0x020E8FC8** (loaded stage) | disassembly |
+| 0x021FF284 (overlay 0) | `stage_id = worlds[w]->entries[s].id`, world table at **0x02200E70**: 12 pointers to world structs; struct +4 → entries, +8 = 10; entry = `{u32 stage_id, u32 flags}` | disassembly; all five owner-confirmed mappings match |
+| 0x021FBF3C / 0x021FBF30 | current world / stage index (s8) in main-game mode | menu code before the call above |
+
+* **Stage map:** the world table yields all 120 main-game stages, each a different file
+  (docs/research_notes/stage_map.md, regenerate with `py -3 -m trcore stagemap <rom> --out …`).
+  67 `smb*` stage files are used by no main-game slot, including every stage the owner listed as unused.
+* **Bonus flag:** entry flag bit 0 is set on stage 5 of every world, and each of those 12 stage files
+  has zero goal records (e.g. World 12-5 "Protuberance", 96 bananas). Overlay 0 at 0x021FF234 returns a
+  special value 0xD for these stages (probably a theme/music selector). Level 2 + code; the in-game
+  meaning "bonus stage" is not yet confirmed by an edit.
+
+## 12. Compression and ROM writing
+
+* trcore's LZ10 encoder (greedy longest match, nearest distance, distance 1 never used, window 4096)
+  reproduces the **exact** compressed bytes of all 235 stage files and a 150-file sample of other
+  types. The original compressor never uses distance 1 (10.3 M back-references in 2,626 compressed files checked).
+* Files start on 0x200 boundaries with zero-filled gaps; the 0x88-byte download-play signature
+  (`ac…`) sits at the used-ROM size; everything after it is zero.
+* `trcore/romwrite.py` writes only new ROM copies, verifies that nothing but the target files (and,
+  when a file moves, the used-ROM size and header CRC) changed, and records every write in a
+  `.patch.json`. Re-inserting a recompressed unchanged `smb1_be01` yields a ROM with the same SHA-1 as
+  the original.

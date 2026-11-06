@@ -1,8 +1,11 @@
-"""Strict, bounded decoder for Nintendo LZ10 (LZ77 type 0x10) streams.
+"""Strict, bounded decoder and verified encoder for Nintendo LZ10 (LZ77 type 0x10).
 
-Decoder only. There is deliberately no encoder in this module: re-encoding is a
-separate operation that needs its own validation and in-game testing before it
-can be trusted.
+``decode`` never returns partial output. ``encode`` reproduces the game's own
+compressor: greedy longest match, nearest displacement on ties, displacement 1
+never used ("VRAM-safe"), window 4096, lengths 3..18. On the USA ROM it
+re-creates the original compressed bytes exactly (see tests/test_rom.py and
+docs/research_notes/stc_format_spec.md). Every encode is verified by decoding
+it again before it is returned.
 
 Stream format (as validated on this corpus):
   byte 0      : type tag 0x10
@@ -139,3 +142,76 @@ def decode(data: bytes, max_output: int = DEFAULT_MAX_OUTPUT):
         overlapping_backrefs=overlapping,
     )
     return bytes(out), info
+
+
+# ------------------------------------------------------------------ encoder
+
+class LZ10EncodeError(Exception):
+    pass
+
+
+MAX_DECLARED_SIZE = 0xFFFFFF  # 24-bit size field
+
+
+def encode(data: bytes, max_len: int = 18, min_disp: int = 2, window: int = 4096) -> bytes:
+    """Compress ``data`` to an LZ10 stream and verify it decodes back to ``data``.
+
+    Defaults match the game's compressor. ``max_len``/``min_disp`` exist only to
+    produce deliberately different (still valid) encodings for testing.
+    """
+    n = len(data)
+    if n == 0:
+        raise LZ10EncodeError("cannot encode empty data (size field 0 is reserved)")
+    if n > MAX_DECLARED_SIZE:
+        raise LZ10EncodeError(f"{n} bytes exceeds the 24-bit size field")
+    if not (3 <= max_len <= 18) or not (1 <= min_disp <= window <= 4096):
+        raise LZ10EncodeError("invalid encoder parameters")
+    data = bytes(data)
+    out = bytearray([0x10, n & 0xFF, (n >> 8) & 0xFF, (n >> 16) & 0xFF])
+    head = {}
+    prev = [-1] * n
+    inserted = 0
+    i = 0
+    while i < n:
+        flag_pos = len(out)
+        out.append(0)
+        flags = 0
+        for bit in range(8):
+            if i >= n:
+                break
+            while inserted < i and inserted + 2 < n:  # hash-chain positions before i
+                key = data[inserted:inserted + 3]
+                prev[inserted] = head.get(key, -1)
+                head[key] = inserted
+                inserted += 1
+            best_len = best_disp = 0
+            if i + 2 < n:
+                limit = min(max_len, n - i)
+                c = head.get(data[i:i + 3], -1)
+                while c >= 0 and i - c <= window:
+                    d = i - c
+                    if d >= min_disp:
+                        length = 3
+                        while length < limit and data[c + length] == data[i + length]:
+                            length += 1
+                        if length > best_len:          # strict '>' keeps the nearest on ties
+                            best_len, best_disp = length, d
+                            if length == limit:
+                                break
+                    c = prev[c]
+            if best_len >= 3:
+                flags |= 0x80 >> bit
+                dd = best_disp - 1
+                out.append(((best_len - 3) << 4) | (dd >> 8))
+                out.append(dd & 0xFF)
+                i += best_len
+            else:
+                out.append(data[i])
+                i += 1
+        out[flag_pos] = flags
+    result = bytes(out)
+    check, info = decode(result, max_output=max(n, 1))
+    if check != data or info.trailing_bytes:
+        raise LZ10EncodeError("internal error: encoded stream does not decode to the input")
+    return result
+

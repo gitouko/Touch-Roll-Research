@@ -207,7 +207,7 @@ def cmd_inspect(args) -> int:
     if doc.header:
         h = {k: v["value"] for k, v in doc.header.items()}
         _p(f"header: u32_04={h['u32_04']:#x} u32_08={h['u32_08']} u32_0C={h['u32_0C']:#x} u32_10={h['u32_10']:#x} "
-           f"u32_14={h['u32_14']} F={h['descriptor_base']:#x} groups={h['group_count']}")
+           f"u32_34={h['u32_34']} F={h['descriptor_base']:#x} groups={h['group_count']}")
         _p("bounds (Q20.12): min (%g, %g, %g) max (%g, %g, %g)" % tuple(
             h[k] for k in ("bounds_min_x", "bounds_min_y", "bounds_min_z", "bounds_max_x", "bounds_max_y",
                            "bounds_max_z")))
@@ -268,6 +268,128 @@ def cmd_hexview(args) -> int:
     return 0
 
 
+# ------------------------------------------------------------ ROM commands
+
+def _load_rom(path: str):
+    from .rom import NdsRom
+    return NdsRom.from_file(path)
+
+
+def cmd_rom_info(args) -> int:
+    rom = _load_rom(args.rom)
+    i = rom.identity()
+    _p(f"title {i['title']}  game code {i['game_code']}  maker {i['maker_code']}  version {i['rom_version']}")
+    _p(f"size {i['size']}  sha1 {i['sha1']}  crc32 {i['crc32']}  header CRC ok: {i['header_crc_ok']}")
+    _p(f"NitroFS files: {i['files']}  used ROM size: 0x{i['used_rom_size']:X}")
+    _p(f"code fingerprint {rom.code_fingerprint()}  profile: {(rom.profile() or {}).get('label', 'none')}")
+    return 0
+
+
+def cmd_stagemap(args) -> int:
+    from .rom import stage_map_markdown
+    rom = _load_rom(args.rom)
+    m = rom.stage_map()
+    for w in m["worlds"]:
+        _p(f"World {w['world']:2d} {w['title']}: " +
+           ", ".join(f"{s['stage']}={s['stage_key']}{'*' if s['flags'] & 1 else ''}" for s in w["stages"]))
+    _p("(* = flag bit 0, bonus-stage candidate)")
+    _p("anchors: " + ", ".join(f"{k} {'ok' if v['ok'] else 'MISMATCH'}" for k, v in m["anchors"].items()))
+    if args.out:
+        w = R.OutputWriter(args.out, [])
+        w.write_text("stage_map.json", R.dumps(m))
+        w.write_text("stage_map.md", stage_map_markdown(m))
+        _p(f"wrote stage_map.json and stage_map.md to {w.out_dir}")
+    for pr in m["problems"]:
+        _p(f"PROBLEM: {pr}")
+    return 1 if m["problems"] else 0
+
+
+def _source_bytes(path: str) -> bytes:
+    from . import lz10
+    with open(path, "rb") as fh:
+        data = fh.read()
+    if data[:4] == b"LCTS":
+        return lz10.encode(data)          # decoded stage: compress like the game does
+    if data[:1] == b"\x10":
+        lz10.decode(data)                 # must be a valid LZ10 stream
+        return data
+    raise ValueError("source must be a decoded .stc (LCTS) or an LZ10-compressed file")
+
+
+def cmd_rom_replace(args) -> int:
+    from . import romwrite
+    try:
+        data = _source_bytes(args.source)
+        rec = romwrite.write_rom_copy(args.rom, args.out, args.nitro_path, data, force_relocate=args.relocate)
+    except (romwrite.RomWriteRefused, ValueError) as exc:
+        _p(f"refused: {exc}")
+        return 1
+    r0 = rec["replacements"][0]
+    _p(f"wrote {args.out}  ({r0['placement']}, {r0['old']['size']} -> {r0['new']['size']} bytes)")
+    _p(f"output sha1 {rec['output_rom']['sha1']}  identical to input: {rec['output_identical_to_input']}")
+    _p(f"patch record: {rec['record_path']}")
+    return 0
+
+
+def cmd_make_gate(args) -> int:
+    """Gate ROM: W1-1 file moved (same bytes); W1-2 re-encoded differently (same content)."""
+    from . import lz10, romwrite
+    rom = _load_rom(args.rom)
+    m = rom.stage_map()
+    s11 = m["worlds"][0]["stages"][0]
+    s12 = m["worlds"][0]["stages"][1]
+    alt = lz10.encode(rom.stage_file_decoded(s12["stage_key"]), max_len=17)
+    if alt == rom.file_bytes(s12["file"]):
+        _p("alternative encoding came out identical; cannot build a meaningful gate")
+        return 1
+    note = (f"Gate ROM. W1-1 {s11['stage_key']}: identical compressed bytes, moved to the end of the ROM. "
+            f"W1-2 {s12['stage_key']}: different but equivalent LZ10 encoding (max match 17). "
+            "Both must play exactly like the original.")
+    try:
+        rec = romwrite.write_rom_copy_multi(args.rom, args.out, [
+            (s11["file"], rom.file_bytes(s11["file"]), True),
+            (s12["file"], alt, False)], note=note)
+    except romwrite.RomWriteRefused as exc:
+        _p(f"refused: {exc}")
+        return 1
+    for r in rec["replacements"]:
+        _p(f"  {r['file']}: {r['placement']} at {r['new']['start']}, {r['old']['size']} -> {r['new']['size']} bytes")
+    _p(f"wrote {args.out}  sha1 {rec['output_rom']['sha1']}")
+    _p(f"patch record: {rec['record_path']}")
+    return 0
+
+
+def cmd_ramdump_compare(args) -> int:
+    from . import ramdump
+    rom = _load_rom(args.rom)
+    with open(args.dump, "rb") as fh:
+        a = ramdump.analyze_dump(fh.read(), rom)
+    _p(f"stage {a['stage_id_loaded']} ({a['stage_key']}) at {a['stage_data_ptr']}, {a['expected_size']} bytes")
+    w = a["words"]
+    _p(f"words: {w['equal']} equal, {w['relocated']} offset->pointer, {w['other']} other (of {w['total']}); "
+       f"tail equal: {a['tail_bytes_equal']}")
+    for k, v in a["relocated_fields"].items():
+        _p(f"  offset->pointer: {k} x{v}")
+    for d in a["other_diffs"][:25]:
+        _p(f"  other: {d['offset']} {d['field']}: file {d['file']} ram {d['ram']}")
+    result = {k: v for k, v in a.items() if not k.startswith("_")}
+    code = 0
+    if args.against:
+        with open(args.against, "rb") as fh:
+            b = ramdump.analyze_dump(fh.read(), _load_rom(args.against_rom or args.rom))
+        c = ramdump.compare_two(a, b)
+        result["against"] = {"dump": os.path.basename(args.against), **c}
+        _p(f"against {os.path.basename(args.against)}: same stage {c['same_stage']}, "
+           f"identical after pointer normalisation: {c['identical_after_normalizing_pointers']} "
+           f"({c['differing_words']} differing words)")
+        code = 0 if c["identical_after_normalizing_pointers"] else 1
+    if args.json:
+        with open(args.json, "w", encoding="utf-8", newline="\n") as fh:
+            fh.write(R.dumps(result))
+        _p(f"wrote {args.json}")
+    return code
+
+
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(prog="trcore", description=f"{TOOL_NAME} {__version__}: read-only "
                                  "research core for Touch & Roll stage data.")
@@ -294,10 +416,38 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--offset", type=lambda s: int(s, 0), default=0)
     p.add_argument("--length", type=lambda s: int(s, 0), default=0x100)
     p.set_defaults(func=cmd_hexview)
+    p = sub.add_parser("rom-info", help="ROM identity, header CRC, file count, trcore profile")
+    p.add_argument("rom")
+    p.set_defaults(func=cmd_rom_info)
+    p = sub.add_parser("stagemap", help="world/stage -> stage ID -> file map read from the ROM")
+    p.add_argument("rom")
+    p.add_argument("--out", default=None, help="write stage_map.json and stage_map.md here")
+    p.set_defaults(func=cmd_stagemap)
+    p = sub.add_parser("rom-replace", help="write a NEW ROM copy with one NitroFS file replaced")
+    p.add_argument("rom", help="input ROM (never modified)")
+    p.add_argument("out", help="new output .nds path (must not exist)")
+    p.add_argument("nitro_path", help="file inside the ROM, e.g. stcoli/smb1_be01_stc.lz")
+    p.add_argument("source", help="decoded .stc (compressed for you) or an LZ10 file")
+    p.add_argument("--relocate", action="store_true", help="move the file to the end even if it fits")
+    p.set_defaults(func=cmd_rom_replace)
+    p = sub.add_parser("make-gate", help="build the round-trip gate ROM copy (see docs)")
+    p.add_argument("rom")
+    p.add_argument("out")
+    p.set_defaults(func=cmd_make_gate)
+    p = sub.add_parser("ramdump-compare", help="compare a BizHawk Main RAM dump with the expected stage file")
+    p.add_argument("dump")
+    p.add_argument("--rom", required=True, help="the ROM that was running when the dump was taken")
+    p.add_argument("--against", default=None, help="a second dump (e.g. from the original ROM) to compare")
+    p.add_argument("--against-rom", default=None, help="ROM for the second dump (default: --rom)")
+    p.add_argument("--json", default=None, help="write the full comparison to this .json path")
+    p.set_defaults(func=cmd_ramdump_compare)
     return ap
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    from .lz10 import LZ10EncodeError, LZ10Error
+    from .ramdump import DumpError
+    from .rom import RomError
     ap = build_parser()
     args = ap.parse_args(argv)
     if not getattr(args, "func", None):
@@ -308,6 +458,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     except (OSError, R.OutputRefused) as exc:
         _p(f"error: {exc}")
         return 2
+    except (RomError, DumpError, LZ10Error, LZ10EncodeError) as exc:
+        _p(f"error: {exc}")
+        return 1
 
 
 if __name__ == "__main__":

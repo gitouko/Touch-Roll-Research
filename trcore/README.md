@@ -1,8 +1,9 @@
-# trcore — read-only research core
+# trcore — research core and ROM-copy tools
 
-`trcore` indexes the extracted Touch & Roll assets by **content**, decodes LZ10 with a strict
-decoder, parses every `.stc` stage file into a lossless, evidence-annotated document, and writes
-deterministic reports. It never modifies, recompresses or injects anything.
+`trcore` indexes the extracted Touch & Roll assets by **content**, decodes and encodes LZ10, parses
+every `.stc` stage file into a lossless, evidence-annotated document, reads the stage map from the
+ROM, and can write **new ROM copies** with replaced files. It never modifies your original ROM, the
+repository's `data/`, or anything it did not create.
 
 Requirements: Python 3.8 or newer, standard library only. Run everything from the repository root.
 
@@ -19,7 +20,18 @@ py -3 -m trcore inspect data\raw\smb1_ex03.stc
 py -3 -m trcore inspect data\grouped\smb1_ex03\stage.stc --json ex03.json
 py -3 -m trcore hexview data\raw\smb1_be02.stc --offset 0x100 --length 0x70
 py -3 -m unittest discover -s tests -t . -v :: test suite (about 25 s with data\, under 1 s without)
+
+:: ROM tools (read the ROM; write only NEW copies)
+py -3 -m trcore rom-info  "Touch & Roll (USA).nds"
+py -3 -m trcore stagemap  "Touch & Roll (USA).nds" --out generated\trcore
+py -3 -m trcore rom-replace "Touch & Roll (USA).nds" my_copy.nds stcoli/smb1_be01_stc.lz edited_be01.stc
+py -3 -m trcore make-gate "Touch & Roll (USA).nds" TR_gate_W1-1_W1-2.nds
+py -3 -m trcore ramdump-compare dump.bin --rom "Touch & Roll (USA).nds"
 ```
+
+Set `TRCORE_ROM` to your ROM path to also run the ROM tests (and `pip install lupa` to run the
+BizHawk script test under real Lua). See `docs/round_trip_gate.md` for the in-game gate and
+`tools/bizhawk/trcore_dump_stage.lua` for the memory-dump script.
 
 Exit codes: `0` no errors · `1` errors found · `2` usage or I/O problem (for example an output
 directory inside `data\`).
@@ -47,16 +59,26 @@ sources of truth.
   unclaimed bytes are reported as zero-fill or opaque ranges, never dropped.
 * No-op export is byte-identical for every stage source (plain and compressed).
 
+## ROM writing rules
+
+`rom-replace` / `make-gate` refuse to write over the input ROM or any existing file, build the new ROM
+in memory, verify that nothing but the target files changed (plus the used-ROM size and header CRC
+when a file has to move), and write a `.patch.json` record next to the output. A decoded `.stc` given
+as the source is compressed exactly the way the game's own compressor does it.
+
 ## Non-goals of this version
 
-No editing, no LZ10 encoder, no ROM injection, no GUI, no collision decoding. Field labels
-("goal", "banana", …) are hypotheses; see `docs/research_notes/stc_format_spec.md` for the
-evidence behind each one and the experiments that would confirm it.
+No editing commands for stage fields yet, no GUI, no collision decoding. Field labels ("goal",
+"banana", …) are hypotheses unless the spec says otherwise; see
+`docs/research_notes/stc_format_spec.md` for the evidence and the experiments that confirm them.
 
 ## Layout
 
 ```
-trcore/lz10.py          strict LZ10 decoder (no encoder)
+trcore/lz10.py          strict LZ10 decoder + verified encoder matching the game's compressor
+trcore/rom.py           read-only DS ROM access, ROM profile, stage map
+trcore/romwrite.py      verified "replace a file in a NEW ROM copy"
+trcore/ramdump.py       compare a BizHawk Main RAM dump with the expected stage file
 trcore/binreader.py     bounds-checked LE reads, Q20.12
 trcore/assets.py        content classification, name parsing, corpus index
 trcore/stc/layout.py    layout constants + evidence registry (E01..E20)
@@ -64,4 +86,5 @@ trcore/stc/document.py  StageDocument: views, pools, groups, variants, coverage,
 trcore/report.py        deterministic JSON/Markdown, safe output writer
 trcore/cli.py           command line
 tests/                  unittest suite; synthetic fixtures (no game bytes) + corpus tests
+tools/bizhawk/          BizHawk Lua script that dumps memory when a stage loads
 ```

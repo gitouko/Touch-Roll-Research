@@ -120,8 +120,13 @@ class Malformed(unittest.TestCase):
         self.assertIn("descriptor_array_invalid", codes(doc, "error"))
 
     def test_absurd_group_count(self):
-        doc = self.mutate(0x34, "<I", 0xFFFFFFFF)
+        doc = self.mutate(0x14, "<I", 0xFFFFFFFF)      # group count lives at 0x14
         self.assertIn("descriptor_array_invalid", codes(doc, "error"))
+
+    def test_word_0x34_is_not_the_group_count(self):
+        doc = self.mutate(0x34, "<I", 0xFFFFFFFF)
+        self.assertFalse(doc.has_errors(), doc.diagnostics)
+        self.assertEqual(len(doc.groups), 1)
 
     def test_pool_total_overflow(self):
         doc = self.mutate(0x48, "<I", 0x00FFFFFF)

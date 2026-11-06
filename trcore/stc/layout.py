@@ -18,8 +18,10 @@ EVIDENCE = {
     "E02": {"level": 2, "claim": "u32 at 0x04 == 0x12 (meaning unknown)", "basis": "183/183"},
     "E03": {"level": 2, "claim": "0x1C..0x33 = six Q20.12 values, min<=max per axis (bounds-like)",
             "basis": "min<=max 183/183; semantics inferred"},
-    "E04": {"level": 2, "claim": "u32(0x18) = base F of an array of u32(0x34) group descriptors, 0xCC bytes each",
-            "basis": "array fits 183/183; descriptor tails zero 183/183; names resolve 183/183"},
+    "E04": {"level": 2, "claim": "u32(0x18) = base F of an array of u32(0x14) group descriptors, 0xCC bytes each",
+            "basis": "the game's loader (ARM9 0x02041D40..) loops u32(0x14) times stepping 0xCC from u32(0x18); "
+                     "in all 25 files where u32(0x14) > u32(0x34) the extra descriptors are valid "
+                     "(names resolve, tails zero, det>0). An earlier draft wrongly used u32(0x34)"},
     "E05": {"level": 2, "claim": "u32(0x38) start-record count, u32(0x3C) start-record offset; record 0x10 bytes: "
                                  "xyz Q20.12 + u32 angle-like word (16-bit binary angle candidate)",
             "basis": "182/183 main-game files (exception: variant E20); 12 four-player party stages in the ROM pack 4 "
@@ -33,9 +35,10 @@ EVIDENCE = {
             "basis": "11/11 files orthonormal, pools contiguous"},
     "E09": {"level": 2, "claim": "Pool C record 0x10: xyz Q20.12 + u32 word (banana candidate)",
             "basis": "pools contiguous 183/183"},
-    "E10": {"level": 2, "claim": "Descriptor (count, offset) slices at +0x94/+0x9C/+0xA4 are contiguous "
-                                 "prefixes of pools A/B/C; records past the slices are unreferenced",
-            "basis": "contiguous 183/183, no overlaps; 8 files have unreferenced records"},
+    "E10": {"level": 2, "claim": "Descriptor (count, offset) slices at +0x94/+0x9C/+0xA4 split pools A/B/C "
+                                 "into contiguous per-group runs (objects belong to a group)",
+            "basis": "contiguous 183/183, no overlaps; every record belongs to exactly one slice "
+                     "(2,454 in group 0, 470 in moving groups)"},
     "E11": {"level": 2, "claim": "Pool A word +0x30 in {0,1} (red-goal candidate; meaning NOT confirmed)",
             "basis": "value 1 in exactly 5 stages, one record each, incl. both user-reported red-goal stages"},
     "E12": {"level": 2, "claim": "Pool C word +0x0C in {0,1} (meaning unknown; bunch hypothesis untested)",
@@ -55,6 +58,8 @@ EVIDENCE = {
     "E18": {"level": 2, "claim": "0x64..0xE3 all zero", "basis": "183/183"},
     "E19": {"level": 2, "claim": "Descriptor +0x04/+0x08 = offsets of NUL-terminated ASCII names (usually equal)",
             "basis": "182/183 equal; names like START01, MOT_<stage>b"},
+    "E21": {"level": 1, "claim": "u32(0x34) <= group_count; meaning unknown (equal in 158/183 files)",
+            "basis": "never larger than u32(0x14) in the corpus"},
     "E20": {"level": 1, "claim": "Variant 'no_start_slot': no valid start pair; pool totals at 0x3C/0x40/0x44",
             "basis": "single file in corpus; totals equal its group slice sums exactly"},
 }
@@ -76,7 +81,7 @@ HEADER_FIELDS = [
     (0x08, "u32_08", "u32", "E17"),
     (0x0C, "u32_0C", "u32", None),
     (0x10, "u32_10", "u32", None),
-    (0x14, "u32_14", "u32", None),
+    (0x14, "group_count", "u32", "E04"),
     (0x18, "descriptor_base", "u32", "E04"),
     (0x1C, "bounds_min_x", "q12", "E03"),
     (0x20, "bounds_min_y", "q12", "E03"),
@@ -84,7 +89,7 @@ HEADER_FIELDS = [
     (0x28, "bounds_max_x", "q12", "E03"),
     (0x2C, "bounds_max_y", "q12", "E03"),
     (0x30, "bounds_max_z", "q12", "E03"),
-    (0x34, "group_count", "u32", "E04"),
+    (0x34, "u32_34", "u32", "E21"),
     (0x38, "start_count", "u32", "E05"),
     (0x3C, "start_offset", "u32", "E05"),
     (0x40, "pool_a_total", "u32", "E06"),
