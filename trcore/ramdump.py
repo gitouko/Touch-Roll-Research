@@ -1,0 +1,138 @@
+"""Compare an emulator Main-RAM dump with the stage file the game should have loaded.
+
+The dump is the raw 4 MiB DS Main RAM (0x02000000-0x023FFFFF) written by
+tools/bizhawk/trcore_dump_stage.lua. Using the ROM profile, this module reads
+the loaded stage ID and the stage-data pointer from the dump, decodes the
+expected stage file from the ROM, and classifies every aligned 32-bit word of
+the in-RAM copy:
+
+  equal      identical to the file
+  relocated  RAM value == file value + load address (an offset the game turned
+             into a pointer)
+  other      anything else (runtime state, or a real mismatch)
+
+Each differing word is labelled with the trcore field it belongs to.
+"""
+from __future__ import annotations
+
+import struct
+from typing import Dict, List, Optional
+
+from .rom import ARM9_RAM_BASE, MAIN_RAM_SIZE, NdsRom, RomError
+from .stc import layout as L
+from .stc.document import StageDocument
+
+
+class DumpError(Exception):
+    pass
+
+
+def _u32(buf: bytes, addr: int) -> int:
+    o = addr - ARM9_RAM_BASE
+    if o < 0 or o + 4 > len(buf):
+        raise DumpError(f"address {addr:#x} outside the dump")
+    return struct.unpack_from("<I", buf, o)[0]
+
+
+def field_labeler(doc: StageDocument):
+    """Return f(offset) -> label using header fields, descriptors, records and spans."""
+    header = {int(v["offset"], 16): k for k, v in doc.header.items()}
+    desc = []
+    if doc.groups:
+        F = doc.header["descriptor_base"]["value"]
+        desc = [(F + g["index"] * L.DESCRIPTOR_SIZE, g["index"]) for g in doc.groups]
+    rec_spans = [s for s in doc.spans if s.get("record_stride")]
+
+    def label(off: int) -> str:
+        if off in header:
+            return f"header.{header[off]}"
+        for base, k in desc:
+            if base <= off < base + L.DESCRIPTOR_SIZE:
+                return f"group{k}+0x{off - base:02X}"
+        for s in rec_spans:
+            if s["_s"] <= off < s["_e"]:
+                stride = int(s["record_stride"], 16)
+                return f"{s['labels'][0]}[{(off - s['_s']) // stride}]+0x{(off - s['_s']) % stride:02X}"
+        for s in doc.spans:
+            if s["_s"] <= off < s["_e"]:
+                return f"{s['labels'][0]}+0x{off - s['_s']:X}"
+        return "unclaimed"
+    return label
+
+
+def analyze_dump(dump: bytes, rom: NdsRom) -> dict:
+    if len(dump) != MAIN_RAM_SIZE:
+        raise DumpError(f"dump is {len(dump)} bytes; expected {MAIN_RAM_SIZE} (4 MiB Main RAM)")
+    prof = rom.profile()
+    if prof is None:
+        raise DumpError("ROM has no trcore profile (unknown game code / code fingerprint)")
+    loaded = _u32(dump, prof["ram_loaded_stage_id"])
+    requested = _u32(dump, prof["ram_requested_stage_id"])
+    ptr = _u32(dump, prof["ram_stage_data_ptr"])
+    names = rom.stage_names()
+    if loaded >= len(names):
+        raise DumpError(f"loaded stage id {loaded} is not a valid stage")
+    key = names[loaded]
+    try:
+        expected = rom.stage_file_decoded(key)
+    except (RomError, KeyError) as exc:
+        raise DumpError(f"cannot read the expected stage file for {key}: {exc}")
+    start = ptr - ARM9_RAM_BASE
+    if start < 0 or start + len(expected) > len(dump):
+        raise DumpError(f"stage pointer {ptr:#x} does not point inside Main RAM")
+    ram = dump[start:start + len(expected)]
+    if ram[:4] != b"LCTS":
+        raise DumpError(f"no 'LCTS' at stage pointer {ptr:#x}")
+    doc = StageDocument(expected, key)
+    label = field_labeler(doc)
+    equal = relocated = other = 0
+    reloc_labels: Dict[str, int] = {}
+    others: List[dict] = []
+    n4 = len(expected) // 4 * 4
+    for o in range(0, n4, 4):
+        fw = struct.unpack_from("<I", expected, o)[0]
+        rw = struct.unpack_from("<I", ram, o)[0]
+        if fw == rw:
+            equal += 1
+        elif fw != 0 and rw == (fw + ptr) & 0xFFFFFFFF:
+            relocated += 1
+            lab = label(o)
+            generic = lab.split("[")[0] + ("+" + lab.split("+")[-1] if "[" in lab else "")
+            reloc_labels[generic] = reloc_labels.get(generic, 0) + 1
+        else:
+            other += 1
+            if len(others) < 200:
+                others.append({"offset": f"0x{o:X}", "field": label(o), "file": f"0x{fw:08X}",
+                               "ram": f"0x{rw:08X}"})
+    tail_equal = expected[n4:] == ram[n4:]
+    return {
+        "schema": "trcore.ramdump_compare/1",
+        "stage_id_loaded": loaded, "stage_id_requested": requested, "stage_key": key,
+        "stage_data_ptr": f"0x{ptr:08X}", "expected_size": len(expected),
+        "words": {"total": n4 // 4, "equal": equal, "relocated": relocated, "other": other},
+        "tail_bytes_equal": tail_equal,
+        "relocated_fields": dict(sorted(reloc_labels.items())),
+        "other_diffs": others,
+        "other_diffs_truncated": other > len(others),
+        "_normalized": _normalize(expected, ram, ptr),
+    }
+
+
+def _normalize(expected: bytes, ram: bytes, ptr: int) -> bytes:
+    """RAM copy with relocated words turned back into file offsets (for dump-vs-dump comparison)."""
+    out = bytearray(ram)
+    for o in range(0, len(expected) // 4 * 4, 4):
+        fw = struct.unpack_from("<I", expected, o)[0]
+        rw = struct.unpack_from("<I", ram, o)[0]
+        if fw != rw and fw != 0 and rw == (fw + ptr) & 0xFFFFFFFF:
+            struct.pack_into("<I", out, o, fw)
+    return bytes(out)
+
+
+def compare_two(a: dict, b: dict) -> dict:
+    same_stage = a["stage_key"] == b["stage_key"]
+    na, nb = a["_normalized"], b["_normalized"]
+    diffs = [f"0x{o:X}" for o in range(0, min(len(na), len(nb)), 4) if na[o:o + 4] != nb[o:o + 4]]
+    return {"same_stage": same_stage, "same_length": len(na) == len(nb),
+            "identical_after_normalizing_pointers": same_stage and na == nb,
+            "differing_word_offsets": diffs[:200], "differing_words": len(diffs)}

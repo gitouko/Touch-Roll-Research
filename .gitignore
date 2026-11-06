@@ -2,3 +2,6 @@
 /generated/
 __pycache__/
 *.pyc
+# BizHawk RAM dumps contain game memory; keep them out of git
+trcore_ram_*
+*.nds

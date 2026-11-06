@@ -102,9 +102,12 @@ class Corpus(unittest.TestCase):
         self.assertEqual(flagged, ["smb1_ad25", "smb1_be02", "smb1_ex03", "smb2_ad26", "smb2_ex29"])
         for k in flagged:
             self.assertEqual(self.docs[k].facts()["pool_a_u32_30"].count(1), 1, k)
+        # with the group count at 0x14 every object record belongs to exactly one group slice
         unref = sorted(k for k, d in self.docs.items() if any(d.facts()["pool_unreferenced"].values()))
-        self.assertEqual(unref, ["smb1_ad21", "smb1_ex19", "smb1_ex38", "smb1_ex59", "smb2_ad10",
-                                 "smb2_ex30", "smb2_ex33", "smbds_043", "smbds_054"])
+        self.assertEqual(unref, [])
+        ad21 = self.docs["smb1_ad21"].facts()   # 21 groups: static + 20 moving bumper groups
+        self.assertEqual(ad21["group_count"], 21)
+        self.assertEqual(ad21["pool_owner_groups"]["B"], list(range(1, 21)))
         sm = self.docs["smbds_001"].facts()
         self.assertEqual(sm["pool_totals"], {"A": 1, "B": 0, "C": 11})
 
