@@ -179,10 +179,10 @@ which files were swapped, and what was seen (screenshot if possible).
   Open part: confirm that objects in a moving group move with it (hypothesis from E13).
 * **Q3 — answered** (§9): word 1 = bunch. Open part: confirm with one controlled edit.
 * **Q4 — Is `smbds_001` reachable in the game?**
-* **Q5 — Will the game load stage files we wrote?** trcore's encoder reproduces the original
-  compressed bytes exactly (235/235 stage files), so an unchanged round trip yields a byte-identical
-  ROM. The remaining in-game gate (docs/round_trip_gate.md) checks a *moved* file and a *different*
-  valid encoding, which real edits will need.
+* **Q5 — closed, PASSED (2026-11-06).** trcore's encoder reproduces the original compressed bytes
+  exactly, and the in-game gate (a moved file in World 1-1, a different compression in World 1-2)
+  produced in-memory stage data identical to the original ROM's and no visible difference
+  (docs/research_notes/gate_2026-11-06/).
 * **Q6 — Collision tables:** decode `smb1_be01` (one group, simple geometry) against its model.
 * **Q7 — Meaning of 0x0C, 0x10, 0x34, `box2`, descriptor +0x58…+0x70.**
 
@@ -252,3 +252,21 @@ Addresses are RAM addresses for this ROM; they are recorded in `trcore/rom.py` (
   when a file moves, the used-ROM size and header CRC) changed, and records every write in a
   `.patch.json`. Re-inserting a recompressed unchanged `smb1_be01` yields a ROM with the same SHA-1 as
   the original.
+
+## 13. Offsets confirmed in the running game (2026-11-06)
+
+RAM dumps of World 1-1 and 1-2 from the unmodified ROM (BizHawk 2.11.1) show that, when a stage is
+loaded, the game adds the load address to exactly these words and changes nothing else in the stage
+data (docs/research_notes/gate_2026-11-06/README.md). They are therefore **file-relative offsets**
+(Level 4 for "is an offset", observed in the emulator; their targets are as described in §§2–5):
+
+* header 0x18 (`descriptor_base`) and 0x3C (`start_offset`);
+* descriptor +0x04, +0x08 (names), +0x54 (cell table), +0x78/+0x80/+0x88/+0x90 (the offset halves
+  of the +0x74…+0x8C pairs — confirming the `(count, offset)` reading), +0x98 (pool A slice),
+  +0xA8 (pool C slice);
+* the second word of every cell-table entry;
+* hundreds to thousands of words inside the undecoded collision region (643 in `smb1_be01`), all
+  pointing back into that region — a map for decoding collision later.
+
+Header counts (0x14, 0x40–0x48), matrices, coordinates and flags are left unchanged at load time.
+
