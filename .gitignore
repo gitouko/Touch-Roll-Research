@@ -1,0 +1,4 @@
+# trcore generated reports (derived artifacts; regenerate with run_trcore_validate.bat)
+/generated/
+__pycache__/
+*.pyc
