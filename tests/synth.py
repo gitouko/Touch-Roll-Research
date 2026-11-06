@@ -34,7 +34,7 @@ IDENTITY = (1, 0, 0, 0, 1, 0, 0, 0, 1)
 
 def build_stage(goals=((0, IDENTITY, (0, 0, -10)),), bananas=((1, 0.5, 2, 0), (-1, 0.5, 2, 1)),
                 groups=("START01",), goal_owner=0, banana_owner=0, unreferenced_bananas=0,
-                variant="common", u32_08=0) -> bytes:
+                variant="common", u32_08=0, starts=((0, 0, 10, 0x4000),)) -> bytes:
     """goals: (word30, 3x3 tuple, xyz); bananas: (x, y, z, word0C).
 
     goal_owner / banana_owner: index of the group whose slice references the
@@ -44,7 +44,8 @@ def build_stage(goals=((0, IDENTITY, (0, 0, -10)),), bananas=((1, 0.5, 2, 0), (-
     """
     G = len(groups)
     buf = bytearray(0x4000)
-    pa = 0x100
+    sp = 0xE4 if len(starts) == 1 else 0x100   # as observed: 1 start at 0xE4, several at 0x100
+    pa = max(0x100, _align(sp + len(starts) * 0x10))
     pc = _align(pa + len(goals) * 0x34)
     t8c = _align(pc + len(bananas) * 0x10)
     t8c_n = 2
@@ -67,10 +68,11 @@ def build_stage(goals=((0, IDENTITY, (0, 0, -10)),), bananas=((1, 0.5, 2, 0), (-
     struct.pack_into("<I", buf, 0x34, G)
     totals = (len(goals), 0, len(bananas))
     if variant == "common":
-        struct.pack_into("<II", buf, 0x38, 1, 0xE4)
+        struct.pack_into("<II", buf, 0x38, len(starts), sp)
         struct.pack_into("<III", buf, 0x40, *totals)
         struct.pack_into("<6i", buf, 0x4C, 0, 0, 0, Q, Q, Q)
-        struct.pack_into("<3iI", buf, 0xE4, q12(0), q12(0), q12(10), 0x4000)
+        for i, (x, y, z, ang) in enumerate(starts):
+            struct.pack_into("<3iI", buf, sp + i * 0x10, q12(x), q12(y), q12(z), ang)
     elif variant == "no_start_slot":
         struct.pack_into("<I", buf, 0x38, 0x12345)  # odd, not a valid offset
         struct.pack_into("<III", buf, 0x3C, *totals)

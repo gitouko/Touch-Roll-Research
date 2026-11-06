@@ -1,9 +1,14 @@
 # LCTS (`.stc`) stage format — living specification
 
-**Status:** research draft. Nothing in this document is confirmed in-game (no field is above Level 2).
+**Status:** research draft. No byte field has been confirmed by a controlled in-game edit (Level 3+).
+Two meanings are supported by in-game observations reported by the project owner (§9).
 **Corpus:** all 187 decompressed `.stc` files (183 unique contents) in `data/raw` at commit
 `4ddcea8c22373730d263639433bdc59448b06060`. Each LZ10 copy in `data/decompressed` and `data/grouped`
 decodes to exactly the matching `data/raw` file (SHA-256), so the three layers hold one corpus.
+**ROM provenance (2026-11-06):** every one of the 596 files in `data/raw` is byte-identical (decoded
+payload SHA-256) to a file of the same stage name and type in *Super Monkey Ball: Touch & Roll (USA)*,
+game code `AMOE`, SHA-1 `3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17` (§10). The ROM holds 235 stage
+files; trcore parses all 231 unique ones without errors.
 **Executable form:** `trcore/stc/layout.py` (constants + evidence IDs) and `trcore/stc/document.py`
 (parser). `py -3 -m trcore validate` re-runs every count quoted here.
 
@@ -37,7 +42,7 @@ All offsets are absolute byte offsets into the **decompressed** stream. All valu
 | 0x18 | u32 | `descriptor_base` (F) | offset of the group-descriptor array (§5); 32-byte aligned in 183/183 | E04 | 2 |
 | 0x1C–0x30 | 6 × Q20.12 | `bounds_min_xyz`, `bounds_max_xyz` | min ≤ max on every axis in 183/183; "bounds" is an inference | E03 | 2 |
 | 0x34 | u32 | `group_count` (N) | 1 ×123, 2 ×24, up to 22 | E04 | 2 |
-| 0x38 | u32 | `start_count` | 1 in 182/183 | E05 | 2 |
+| 0x38 | u32 | `start_count` | 1 in 182/183 main-game files; 4 in 12 four-player party stages | E05 | 2 |
 | 0x3C | u32 | `start_offset` | 0xE4 in 180; in `smb1_ad30` and `smbds_029` it equals `align32(F + N·0xCC)`, i.e. the start record sits right after the descriptor array | E05 | 2 |
 | 0x40 | u32 | `pool_a_total` | total records in pool A ("goal" candidate) | E06 | 2 |
 | 0x44 | u32 | `pool_b_total` | total records in pool B ("bumper" candidate) | E06 | 2 |
@@ -47,13 +52,19 @@ All offsets are absolute byte offsets into the **decompressed** stream. All valu
 
 The historical note that "0x58–0x60 contain 0x1000" is the default half of the `box2` block.
 
-## 3. Start record (0x1C bytes, at `start_offset`)
+## 3. Start record (0x10 bytes, at `start_offset`)
 
 | +Offset | Type | Observation | Level |
 |---|---|---|---|
 | +0x00 | 3 × Q20.12 | position-like xyz | 2 (structure) |
-| +0x0C | u32 | 0 ×138, 0xC000 ×18, 0x3FFF ×14, 0x1FFF ×6, 0x7FFE, 0xE16C, … — consistent with a 16-bit binary angle (0x4000 = 90°) but **unverified** | 1 |
-| +0x10 | 12 bytes | zero in every observed record | 2 |
+| +0x0C | u32 | 0 ×138, 0xC000 ×18, 0x3FFF ×14, 0x1FFF ×6, 0x7FFE, 0xE16C, … — 16-bit binary angle candidate (0x4000 = 90°) | 2 (structure) |
+
+The record is **0x10** bytes, not 0x1C. In single-start files the record at 0xE4 is followed by 12 zero
+bytes up to the 32-byte boundary at 0x100, which made it look like 0x1C. The 12 four-player party
+stages in the ROM (`fight*`, …) pack four records at a 0x10 stride from 0x100 straight into the next
+table, and padding after the last record is zero in 234/234 files. In `fight01` the four starts sit
+at (±4, 0, ±4) with angle words 0xE000, 0x1FFF, 0x5FFF, 0xA000 — each 90° apart, each facing the
+centre — which supports the yaw-angle reading.
 
 ## 4. Object pools
 
@@ -73,11 +84,13 @@ prefixes of the pool in group order (183/183, no overlaps). Records after the la
   `smb1_ex03`, …). Matrices are orthonormal at stride 0x34 in 168/169 files. The exception,
   `smb2_ad26`, has a 1.5 y-scale that cancels its group's 0.667 y-scale (E13).
 * **Pool A word +0x30** is 0 in 172 records and 1 in exactly five stages, once each:
-  `smb1_ad25`, `smb1_be02`, `smb1_ex03`, `smb2_ad26`, `smb2_ex29` (E11). Both user-reported
-  red-goal stages are in this set; `smb1_ad16` (two records, both 0) is a control. **Red-goal meaning is a
-  hypothesis** until tested.
-* **Pool C word +0x0C** is 0 in 2,173 records and 1 in 193 records across 58 files (E12). Meaning
-  unknown (a "bunch" flag is one untested hypothesis).
+  `smb1_ad25`, `smb1_be02`, `smb1_ex03`, `smb2_ad26`, `smb2_ex29` (E11). Per the project owner, the
+  game has exactly two red goals; `ad25`, `ex29` and `ad26` are unused stages, so among stages that are
+  played, the word is 1 only in `be02` and `ex03` — the two reported red-goal stages. The owner also
+  reports that the goal itself looks/behaves the same (§9), so **whether this word is what makes a goal
+  "red"** still needs the controlled edit in §8 Q1.
+* **Pool C word +0x0C** is 0 in 2,173 records and 1 in 193 records across 58 files (E12).
+  **Reported in-game: 1 = banana bunch worth 5 bananas** (§9).
 * **Unreferenced records** (header total > referenced): `smb1_ad21` (20/20 B), `smb1_ex19` and its
   duplicate `ex59` (13/13 C), `smb1_ex38` (6/8 C), `smb2_ad10` (1/1 A), `smb2_ex30` (48/48 C),
   `smb2_ex33` (8/8 C), `smbds_043` (4/10 B), `smbds_054` (1/1 A, 4/12 C). Whether the game shows
@@ -144,6 +157,7 @@ stage (E20, Level 1).
 | `F+0x90` = end of object records | **Revised** — it is the offset of descriptor 0's +0x8C table, which happens to follow the pools |
 | `smb1_ex03` header/footer count conflict | **Resolved** — its objects belong to group 1 (`MOT_smb1_ex03b`); group 0's slices are empty |
 | `smbds_001` has 0x3C == 1 | **Confirmed**, explained as variant `no_start_slot` |
+| Start record 0x1C bytes at 0xE4 | **Rejected** — 0x10 bytes plus padding (four-start party stages) |
 | Identity matrix + (0, 0, −46) at 0x100 in `smb1_ad02` | **Confirmed** (pool A record 0) |
 | Q20.12 numeric encoding | **Supported** for matrices, positions and bounds; not for 0x0C/0x10/0x14 |
 | IEEE-754 float candidates (old analyzer) | **Rejected** — on decoded data they are zeros and small integers misread as floats |
@@ -153,17 +167,53 @@ stage (E20, Level 1).
 All in-game work should use a **copy** of the ROM and record: ROM SHA-1, emulator + version,
 which files were swapped, and what was seen (screenshot if possible).
 
-* **Q1 — Pool A word +0x30 = red goal?** No edits: play `smb1_ad25`, `smb2_ad26`, `smb2_ex29`
-  (prediction: one red goal each) and `smb1_ad16` (prediction: two non-red goals).
-  Then, once re-injection works (Q5): flip `smb1_be02` record 1's word from 1 to 0 (offset 0x164)
-  and predict a normal goal at the same place.
-* **Q2 — Are unreferenced records used?** No edits: count bananas in `smb1_ex19`
-  (13 unreferenced), `smb2_ex30` (48) and bumpers in `smb1_ad21` (20). Visible ⇒ the game reads
-  header pools; absent ⇒ only group slices matter.
-* **Q3 — Pool C word +0x0C = banana bunch?** No edits: in a stage with both values (e.g.
-  `smb1_ad02`) compare singles/bunches with the file (`py -3 -m trcore inspect`).
+* **Q1 — Is pool A word +0x30 what makes a goal red?** The ad25/ad26/ex29 checks are impossible
+  (unused stages). Decisive test, once re-injection works (Q5): in `smb1_be02` (World 8-1) change
+  record 1's word from 1 to 0 (decoded offset 0x164) and check whether finishing through that goal
+  still counts as a red goal; as a converse, set `smb1_be01`'s goal word to 1.
+* **Q2 — answered** (§9): unreferenced records are spawned. Open part: what the group slices do
+  (hypothesis: attach objects to a moving group).
+* **Q3 — answered** (§9): word 1 = bunch. Open part: confirm with one controlled edit.
 * **Q4 — Is `smbds_001` reachable in the game?**
 * **Q5 — Will the game accept a different valid LZ10 encoding of an unchanged file?** Required
   before any byte edit can be tested. Needs an LZ10 encoder (not yet written).
 * **Q6 — Collision tables:** decode `smb1_be01` (one group, simple geometry) against its model.
 * **Q7 — Meaning of 0x0C, 0x10, 0x14, `box2`, descriptor +0x58…+0x70.**
+
+## 9. In-game observations reported by the project owner (2026-11-06)
+
+These were observed in the unmodified game (BizHawk, USA ROM) by the project owner, not reproduced by
+trcore. They raise the *meaning* of a field; they are not controlled byte edits.
+
+| Observation | What it supports |
+|---|---|
+| `smb2_ex30` = World 12 "Mesh Mosh", stage 5 "Protuberance": all bananas appear, although none of its 48 pool C records is in a group slice | Header pool totals drive spawning; slices are not required (E06, E10) |
+| `smb1_ad21` = World 5 "Palarvar Lava", stage 6 "Conveyor": all 20 bumpers appear, none in a slice | same |
+| Banana flag: pool C word +0x0C = 1 is a banana **bunch worth 5 bananas** | E12 meaning |
+| Exactly two red goals exist in the game; collecting both (after worlds 7–10) unlocks World 11 "Studio One". `smb1_be02` = World 8, stage 1 "Hollow Diamond" has one. | Context for E11 |
+| "The goal flag is the exact same for both normal and red goals" | Under clarification: whether this means the goal looks identical in-game |
+| `smb1_ad02` = World 5 stage 2 "Sword". `smb1_ad25`, `smb2_ex29`, `smb2_ad26`, `smb1_ad16`, `smb1_ex19` are not in the game | Stage mapping |
+
+## 10. ROM provenance and how the game names stage files
+
+ROM: title `MONKEYBALLDS`, game code `AMOE`, maker `8P`, version 0, 64 MiB,
+SHA-1 `3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17`, CRC32 `ad0c8379`.
+
+* NitroFS holds 2,661 files. Stage data is `stcoli/<stage>_stc.lz` (LZ10); stage models/textures/
+  animations are `model/stage/<stage>_<type>.lz`. The repo's `data/decompressed` names are these
+  original ROM names.
+* All 595 compressed files in the repo are byte-identical to ROM files, and all 596 `data/raw`
+  files match a ROM file of the same stage name and type after decoding.
+* The ROM has **235** stage files; the repo has the 187 main-game ones. Not extracted: 48 party-game
+  stages (`bowl01-02`, `fight01-03`, `golf01-25`, `race01/02/04/08/09/11`, `surv01-09`,
+  `target01-03`). trcore parses all of them without errors.
+* ARM9 (uncompressed) contains a 197-entry table of pointers to stage-name strings at ARM9 file
+  offset 0xC4B4C (RAM 0x020C4B4C), plus the format string `stcoli/%s_stc.lz` at 0xC5370 — very likely
+  how the game builds a stage file name from a stage ID (inference). Code references to the table
+  are at ARM9 offsets 0x41780 and 0x41F60.
+  * 32 names in that table have no file (`smbds_057`, `smbds_070`–`smbds_100`).
+  * 22 stage files are not named in the table, so they cannot be reached by stage ID: `smb1_ad16`,
+    `smb1_ex46/47/48/52/53/59/61/62/63/64/65/66/68/72`, `smb2_ad16/24/30`, `smb2_ex05/10/14/32`.
+  * Being in the table does **not** mean a stage is played (`smb1_ad25` is in it but unused). The
+    world/stage order table has not been found yet.
+

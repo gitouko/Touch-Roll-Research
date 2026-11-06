@@ -79,6 +79,16 @@ class CommonLayout(unittest.TestCase):
         self.assertEqual(doc.checks["start_slot_valid"], "fail")
         self.assertFalse(doc.has_errors())
 
+    def test_multiple_starts_use_0x10_stride(self):
+        starts = ((-4, 0, 4, 0xE000), (4, 0, 4, 0x1FFF), (4, 0, -4, 0x5FFF), (-4, 0, -4, 0xA000))
+        doc = StageDocument(build_stage(starts=starts, goals=()))
+        recs = doc.start["records"]
+        self.assertEqual([r["offset"] for r in recs], ["0x100", "0x110", "0x120", "0x130"])
+        self.assertEqual(recs[2]["position"], [4.0, 0.0, -4.0])
+        self.assertEqual(recs[3]["u32_0C"], 0xA000)
+        self.assertEqual(doc.checks["no_span_overlaps"], "pass")
+        self.assertFalse(doc.has_errors(), doc.diagnostics)
+
     def test_two_goals_use_0x34_stride(self):
         goals = ((0, IDENTITY, (0, 0, -20)), (1, IDENTITY, (0, -8.5, 17)))
         doc = StageDocument(build_stage(goals=goals))

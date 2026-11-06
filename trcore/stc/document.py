@@ -275,10 +275,9 @@ class StageDocument:
             recs = []
             for i in range(sc):
                 o = sp + i * L.START_RECORD_SIZE
-                tail = r.slice(o + 0x10, 0x0C)
                 recs.append({"index": i, "offset": _hex(o),
                              "position": [r.q12(o), r.q12(o + 4), r.q12(o + 8)],
-                             "u32_0C": r.u32(o + 0xC), "tail_hex": tail.hex(" "), "tail_zero": not any(tail)})
+                             "u32_0C": r.u32(o + 0xC)})
             self.start = {"count": sc, "offset": _hex(sp), "records": recs, "evidence": "E05"}
             self._span(sp, sp + sc * L.START_RECORD_SIZE, "records", "start_records", "E05", L.START_RECORD_SIZE)
             return

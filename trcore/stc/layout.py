@@ -20,8 +20,10 @@ EVIDENCE = {
             "basis": "min<=max 183/183; semantics inferred"},
     "E04": {"level": 2, "claim": "u32(0x18) = base F of an array of u32(0x34) group descriptors, 0xCC bytes each",
             "basis": "array fits 183/183; descriptor tails zero 183/183; names resolve 183/183"},
-    "E05": {"level": 2, "claim": "u32(0x38) start-record count, u32(0x3C) start-record offset, record 0x1C bytes",
-            "basis": "182/183 (exception: layout variant E20)"},
+    "E05": {"level": 2, "claim": "u32(0x38) start-record count, u32(0x3C) start-record offset; record 0x10 bytes: "
+                                 "xyz Q20.12 + u32 angle-like word (16-bit binary angle candidate)",
+            "basis": "182/183 main-game files (exception: variant E20); 12 four-player party stages in the ROM pack 4 "
+                     "records at a 0x10 stride. The historical 0x1C size was 0x10 plus padding to a 32-byte boundary"},
     "E06": {"level": 2, "claim": "u32(0x40/0x44/0x48) = total records in pools A/B/C",
             "basis": "total >= referenced 181/183 per pool; exception is variant E20"},
     "E07": {"level": 2, "claim": "Pool A record 0x34: 3x3 Q20.12 + xyz Q20.12 + u32 word (goal candidate)",
@@ -60,7 +62,7 @@ EVIDENCE = {
 HEADER_SIZE = 0xE4          # 0x00..0xE3 (fixed fields + reserved zero block)
 HEADER_FIELDS_END = 0x64
 DESCRIPTOR_SIZE = 0xCC
-START_RECORD_SIZE = 0x1C
+START_RECORD_SIZE = 0x10
 
 MAX_GROUPS = 4096           # sanity caps: far above anything observed (max 22)
 MAX_START_RECORDS = 64
