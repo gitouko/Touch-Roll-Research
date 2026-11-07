@@ -26,6 +26,7 @@ py -3 -m trcore rom-info  "Touch & Roll (USA).nds"
 py -3 -m trcore stagemap  "Touch & Roll (USA).nds" --out generated\trcore
 py -3 -m trcore rom-replace "Touch & Roll (USA).nds" my_copy.nds stcoli/smb1_be01_stc.lz edited_be01.stc
 py -3 -m trcore make-gate "Touch & Roll (USA).nds" TR_gate_W1-1_W1-2.nds
+py -3 -m trcore stage-edit "Touch & Roll (USA).nds" TR_edit1_World1.nds docs\experiments\edit1_world1\plan.json
 py -3 -m trcore ramdump-compare dump.bin --rom "Touch & Roll (USA).nds"
 ```
 
@@ -66,9 +67,17 @@ in memory, verify that nothing but the target files changed (plus the used-ROM s
 when a file has to move), and write a `.patch.json` record next to the output. A decoded `.stc` given
 as the source is compressed exactly the way the game's own compressor does it.
 
+## Editing stage fields
+
+`stage-edit` applies a JSON edit plan (format in `trcore/editplan.py`). Only fields of start records
+and object-pool records can be edited (position, matrix, translation and the flag words); every edit
+must state the field's current value, and the edit is refused if any byte outside the edited fields
+would change or the stage's parsed structure would differ. Each run writes a new ROM copy plus a
+`.patch.json` with old/new bytes, offsets, hashes and the stated prediction.
+
 ## Non-goals of this version
 
-No editing commands for stage fields yet, no GUI, no collision decoding. Field labels ("goal",
+No adding/removing objects, no GUI, no collision decoding. Field labels ("goal",
 "banana", …) are hypotheses unless the spec says otherwise; see
 `docs/research_notes/stc_format_spec.md` for the evidence and the experiments that confirm them.
 
@@ -78,6 +87,8 @@ No editing commands for stage fields yet, no GUI, no collision decoding. Field l
 trcore/lz10.py          strict LZ10 decoder + verified encoder matching the game's compressor
 trcore/rom.py           read-only DS ROM access, ROM profile, stage map
 trcore/romwrite.py      verified "replace a file in a NEW ROM copy"
+trcore/stc/edit.py      same-size field edits of known record fields, with structure checks
+trcore/editplan.py      JSON edit plan -> new ROM copy + patch record
 trcore/ramdump.py       compare a BizHawk Main RAM dump with the expected stage file
 trcore/binreader.py     bounds-checked LE reads, Q20.12
 trcore/assets.py        content classification, name parsing, corpus index

@@ -1,0 +1,232 @@
+{
+ "schema": "trcore.rom_patch_record/1",
+ "tool": "trcore 0.1.0",
+ "note": "Edit test 1 (World 1): one small, visible change in each of stages 1-4",
+ "input_rom": {
+  "name": "0333 - Super Monkey Ball - Touch & Roll (USA) (En,Fr,De,Es,It).nds",
+  "sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17"
+ },
+ "output_rom": {
+  "name": "TR_edit1_World1.nds",
+  "sha1": "5c20111da8c0734b3ade1bfedb9ecc3e92e9ad0e"
+ },
+ "output_identical_to_input": false,
+ "replacements": [
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_be01_stc.lz",
+   "file_id": 2488,
+   "placement": "in_place",
+   "old": {
+    "start": "0x113F000",
+    "end": "0x1144BC1",
+    "size": 23489,
+    "sha256": "3b9a8bc71e7d69e503305536e890e727c7c7fa916f055a97f1cd88249b8caf4a",
+    "decoded_sha256": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+    "decoded_size": 85296
+   },
+   "new": {
+    "start": "0x113F000",
+    "end": "0x1144BC3",
+    "size": 23491,
+    "sha256": "5208703492cc56f70e66b3f3a72a70d151d42f85d3743c45dd3ddf8f5f4c5d57",
+    "decoded_sha256": "df77adbc7e40c2006b80380d78e22ea139ef73ee4ac2b32d6313def3eed563e2",
+    "decoded_size": 85296
+   },
+   "header_changes": []
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smbds_023_stc.lz",
+   "file_id": 2603,
+   "placement": "in_place",
+   "old": {
+    "start": "0x3B9C00",
+    "end": "0x3C9344",
+    "size": 63300,
+    "sha256": "d36d87942e96d6a71a01449f4eb6d78fb503f0e6c62d9e2487f49fb4771efd6a",
+    "decoded_sha256": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+    "decoded_size": 184992
+   },
+   "new": {
+    "start": "0x3B9C00",
+    "end": "0x3C9345",
+    "size": 63301,
+    "sha256": "3cf52acf58538d33f02706a98a56b64a3084dc4fc9ec3bafd75bed198683f92f",
+    "decoded_sha256": "5aed43a3efe62329ad50534529b844e81af75deced66be4ff0c61274b22e762c",
+    "decoded_size": 184992
+   },
+   "header_changes": []
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_be06_stc.lz",
+   "file_id": 2493,
+   "placement": "in_place",
+   "old": {
+    "start": "0x383C00",
+    "end": "0x397F72",
+    "size": 82802,
+    "sha256": "36bced809c67634e7dbe12747ed8639fcf950f138b0e5d59480a94598f77de25",
+    "decoded_sha256": "30b104f9246bf679f04e49d376ab145a0b55244c2b6b584dc1e197e9f5505d8e",
+    "decoded_size": 269584
+   },
+   "new": {
+    "start": "0x383C00",
+    "end": "0x397F74",
+    "size": 82804,
+    "sha256": "444c90702d1956bb0456b28e31890613e80f2f1e3c1303e801785ab767353c01",
+    "decoded_sha256": "fd4b557b548421d2e3410fff4e84f96ccad061dd6113fa26d2be0aa56770df73",
+    "decoded_size": 269584
+   },
+   "header_changes": []
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smbds_015_stc.lz",
+   "file_id": 2595,
+   "placement": "in_place",
+   "old": {
+    "start": "0x1598A00",
+    "end": "0x15B6C3B",
+    "size": 123451,
+    "sha256": "4d8a02635a00b7adf26d14f4f66a9c3236149d5f73fa31b5f39fefad2004cb07",
+    "decoded_sha256": "9e60ce674674ed96a96364bd10aa617cac887552f5172c428cb9fca24cb9a24a",
+    "decoded_size": 280624
+   },
+   "new": {
+    "start": "0x1598A00",
+    "end": "0x15B6C42",
+    "size": 123458,
+    "sha256": "50ba623e24e959c2fa946dbae7b27c793810542b1aa44b5c7b4db71760844e19",
+    "decoded_sha256": "cce4edb727023649597507d8861be965718ec00dcee390de30414b69b0a61c48",
+    "decoded_size": 280624
+   },
+   "header_changes": []
+  }
+ ],
+ "plan_schema": "trcore.edit_plan/1",
+ "stage_edits": [
+  {
+   "file": "stcoli/smb1_be01_stc.lz",
+   "stage_key": "smb1_be01",
+   "where": "World 1-1 Elementary",
+   "decoded_size": 85296,
+   "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+   "decoded_sha256_after": "df77adbc7e40c2006b80380d78e22ea139ef73ee4ac2b32d6313def3eed563e2",
+   "edits": [
+    {
+     "target": "pool_C[1].position",
+     "field_type": "q12",
+     "offset": "0x150",
+     "width": 12,
+     "old_raw": "33 37 00 00 00 08 00 00 00 00 00 00",
+     "new_raw": "33 37 00 00 00 08 00 00 00 20 00 00",
+     "old_value": [
+      3.449951171875,
+      0.5,
+      0.0
+     ],
+     "new_value": [
+      3.449951171875,
+      0.5,
+      2.0
+     ],
+     "unchanged": false,
+     "prediction": "The 2nd banana on the path (the one between the 1st banana and the goal) is no longer on the straight line: it sits 2.0 units to one side, toward one of the two bananas beside the goal. Everything else unchanged. Note which side (left/right seen from the start).",
+     "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+     "decoded_sha256_after": "df77adbc7e40c2006b80380d78e22ea139ef73ee4ac2b32d6313def3eed563e2"
+    }
+   ]
+  },
+  {
+   "file": "stcoli/smbds_023_stc.lz",
+   "stage_key": "smbds_023",
+   "where": "World 1-2 Sine Wave",
+   "decoded_size": 184992,
+   "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+   "decoded_sha256_after": "5aed43a3efe62329ad50534529b844e81af75deced66be4ff0c61274b22e762c",
+   "edits": [
+    {
+     "target": "pool_C[0].u32_0C",
+     "field_type": "u32",
+     "offset": "0x14C",
+     "width": 4,
+     "old_raw": "00 00 00 00",
+     "new_raw": "01 00 00 00",
+     "old_value": [
+      0
+     ],
+     "new_value": [
+      1
+     ],
+     "unchanged": false,
+     "prediction": "The first banana ahead of the start is a banana BUNCH; collecting it adds 5 bananas.",
+     "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+     "decoded_sha256_after": "5aed43a3efe62329ad50534529b844e81af75deced66be4ff0c61274b22e762c"
+    }
+   ]
+  },
+  {
+   "file": "stcoli/smb1_be06_stc.lz",
+   "stage_key": "smb1_be06",
+   "where": "World 1-3 Curvature",
+   "decoded_size": 269584,
+   "decoded_sha256_before": "30b104f9246bf679f04e49d376ab145a0b55244c2b6b584dc1e197e9f5505d8e",
+   "decoded_sha256_after": "fd4b557b548421d2e3410fff4e84f96ccad061dd6113fa26d2be0aa56770df73",
+   "edits": [
+    {
+     "target": "start[0].u32_0C",
+     "field_type": "u32",
+     "offset": "0xF0",
+     "width": 4,
+     "old_raw": "00 00 00 00",
+     "new_raw": "00 40 00 00",
+     "old_value": [
+      0
+     ],
+     "new_value": [
+      16384
+     ],
+     "unchanged": false,
+     "prediction": "At the start the ball/camera faces 90 degrees to one side compared with the original; the start position is the same. Note which side (left/right).",
+     "decoded_sha256_before": "30b104f9246bf679f04e49d376ab145a0b55244c2b6b584dc1e197e9f5505d8e",
+     "decoded_sha256_after": "fd4b557b548421d2e3410fff4e84f96ccad061dd6113fa26d2be0aa56770df73"
+    }
+   ]
+  },
+  {
+   "file": "stcoli/smbds_015_stc.lz",
+   "stage_key": "smbds_015",
+   "where": "World 1-4 Progenitor",
+   "decoded_size": 280624,
+   "decoded_sha256_before": "9e60ce674674ed96a96364bd10aa617cac887552f5172c428cb9fca24cb9a24a",
+   "decoded_sha256_after": "cce4edb727023649597507d8861be965718ec00dcee390de30414b69b0a61c48",
+   "edits": [
+    {
+     "target": "pool_A[0].translation",
+     "field_type": "q12",
+     "offset": "0x124",
+     "width": 12,
+     "old_raw": "a7 f2 fe ff 00 00 00 00 b2 11 f6 ff",
+     "new_raw": "a7 f2 fe ff 00 20 00 00 b2 11 f6 ff",
+     "old_value": [
+      -16.834228515625,
+      0.0,
+      -158.89404296875
+     ],
+     "new_value": [
+      -16.834228515625,
+      2.0,
+      -158.89404296875
+     ],
+     "unchanged": false,
+     "prediction": "The goal at the end floats about 2 units above its platform (same spot, just higher). Try to finish and note whether and how it counts.",
+     "decoded_sha256_before": "9e60ce674674ed96a96364bd10aa617cac887552f5172c428cb9fca24cb9a24a",
+     "decoded_sha256_after": "cce4edb727023649597507d8861be965718ec00dcee390de30414b69b0a61c48"
+    }
+   ]
+  }
+ ],
+ "status": "generated - not yet verified in-game"
+}

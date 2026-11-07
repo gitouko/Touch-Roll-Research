@@ -1,6 +1,7 @@
 # LCTS (`.stc`) stage format — living specification
 
-**Status:** research draft. No byte field has been confirmed by a controlled in-game edit (Level 3+).
+**Status:** research draft. Fields confirmed by controlled in-game edits (Level 4) are listed in §14;
+everything else is Level 2 or below.
 Two meanings are supported by in-game observations reported by the project owner (§9), and several
 structural facts are now backed by the game's own code (§10, "code" in the evidence column).
 **Corpus:** all 187 decompressed `.stc` files (183 unique contents) in `data/raw` at commit
@@ -183,6 +184,8 @@ which files were swapped, and what was seen (screenshot if possible).
   exactly, and the in-game gate (a moved file in World 1-1, a different compression in World 1-2)
   produced in-memory stage data identical to the original ROM's and no visible difference
   (docs/research_notes/gate_2026-11-06/).
+* **Edit test 1 — PASSED (2026-11-06):** banana position, bunch flag, start angle and goal
+  position confirmed in-game (§14, docs/experiments/edit1_world1/).
 * **Q6 — Collision tables:** decode `smb1_be01` (one group, simple geometry) against its model.
 * **Q7 — Meaning of 0x0C, 0x10, 0x34, `box2`, descriptor +0x58…+0x70.**
 
@@ -269,4 +272,22 @@ data (docs/research_notes/gate_2026-11-06/README.md). They are therefore **file-
   pointing back into that region — a map for decoding collision later.
 
 Header counts (0x14, 0x40–0x48), matrices, coordinates and flags are left unchanged at load time.
+
+## 14. Confirmed by controlled in-game edits (Level 4)
+
+Edit test 1 (2026-11-06, BizHawk 2.11.1, one single-field edit per stage, memory verified):
+
+| Field | Meaning confirmed | Evidence |
+|---|---|---|
+| pool C record +0x00 (3 × Q20.12) | banana position | W1-1: z 0 → 2.0 moved the banana sideways |
+| pool C record +0x0C (u32) | 1 = banana bunch worth 5, 0 = single banana | W1-2: flag 0 → 1 gave a bunch, counter +5 |
+| start record +0x0C (u32, low 16 bits) | start facing angle, 0x10000 = 360°, increasing = turn left | W1-3: 0 → 0x4000 turned the start 90° left |
+| pool A record +0x24 (3 × Q20.12) | goal position (model and trigger) | W1-4: y 0 → 2.0 made the goal float and unreachable |
+
+**Coordinate system:** right-handed, **y up**, units as stored (Q20.12). A facing angle of 0 looks along
+**−z**; with facing +x (0xC000), +z is to the right. Across the game the start faces the goal in 88 of
+91 static-goal stages under this convention.
+
+Not yet confirmed in-game: start position, goal rotation matrix and the goal flag word (+0x30, red-goal
+candidate), bumpers (pool B), objects that belong to moving groups, and everything in §5's tables.
 
