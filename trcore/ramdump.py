@@ -118,6 +118,43 @@ def analyze_dump(dump: bytes, rom: NdsRom) -> dict:
     }
 
 
+def analyze_model(dump: bytes, rom: NdsRom, stage_key: str) -> dict:
+    """Find the stage's model (NSBMD) in a Main-RAM dump and compare it with the ROM's model file.
+
+    The game keeps the model file as loaded; the texture setup (NNS) rewrites some material fields, so
+    differences inside the material block are expected. Display lists (what is drawn) must be equal."""
+    model = rom.stage_model_decoded(stage_key)
+    if model is None:
+        return {"stage_key": stage_key, "found": False, "reason": "no model file for this stage"}
+    from .nitro.nsbmd import Nsbmd
+    head = model[:16]
+    hits = []
+    i = dump.find(head)
+    while i >= 0 and len(hits) < 8:
+        hits.append(i)
+        i = dump.find(head, i + 4)
+    if not hits:
+        return {"stage_key": stage_key, "found": False, "reason": "the model's file header is not in memory"}
+    m = Nsbmd(model, stage_key).models[0]
+    mat0, mat1 = m.base + m.ofs_mat, m.base + m.ofs_shp
+    dls = [(s["name"], s["dl_offset"], s["dl_offset"] + s["dl_size"]) for s in m.shapes]
+    best = None
+    for at in hits:
+        ram = dump[at:at + len(model)]
+        diff = [o for o in range(0, min(len(ram), len(model)) // 4 * 4, 4) if ram[o:o + 4] != model[o:o + 4]]
+        in_mat = sum(1 for o in diff if mat0 <= o < mat1)
+        in_dl = {n: sum(1 for o in diff if a <= o < b) for n, a, b in dls}
+        res = {"address": f"0x{ARM9_RAM_BASE + at:08X}", "size": len(model),
+               "words_total": len(model) // 4, "words_different": len(diff),
+               "different_in_material_block": in_mat, "different_elsewhere": len(diff) - in_mat,
+               "display_lists_equal": all(v == 0 for v in in_dl.values()),
+               "display_list_differences": in_dl,
+               "first_other_differences": [f"0x{o:X}" for o in diff if not mat0 <= o < mat1][:20]}
+        if best is None or res["different_elsewhere"] < best["different_elsewhere"]:
+            best = res
+    return {"stage_key": stage_key, "found": True, "copies_with_this_header": len(hits), **best}
+
+
 def _normalize(expected: bytes, ram: bytes, ptr: int) -> bytes:
     """RAM copy with relocated words turned back into file offsets (for dump-vs-dump comparison)."""
     out = bytearray(ram)

@@ -30,6 +30,7 @@ py -3 -m trcore make-gate "Touch & Roll (USA).nds" TR_gate_W1-1_W1-2.nds
 py -3 -m trcore stage-edit "Touch & Roll (USA).nds" TR_edit1_World1.nds docs\experiments\edit1_world1\plan.json
 py -3 -m trcore ramdump-compare dump.bin --rom "Touch & Roll (USA).nds"
 py -3 -m trcore stage-models "Touch & Roll (USA).nds" --out generated\trcore   :: model reader + floor-fit check
+py -3 -m trcore cells "Touch & Roll (USA).nds" --main-only                     :: collision cell list rules
 ```
 
 The desktop editor built on trcore lives in `tredit/`; start it with `run_editor.bat` (see
@@ -80,9 +81,29 @@ must state the field's current value, and the edit is refused if any byte outsid
 would change or the stage's parsed structure would differ. Each run writes a new ROM copy plus a
 `.patch.json` with old/new bytes, offsets, hashes and the stated prediction.
 
-## Non-goals of this version
+## Adding, removing and moving objects (plan schema `trcore.edit_plan/2`)
 
-No adding/removing objects, no GUI, no collision decoding. Field meanings are confirmed only where
+A stage entry can also carry `"objects": [...]` with `add`, `remove` and `move` operations (format in
+`trcore/stc/objects.py`). The changed pool is rebuilt as one contiguous array at the end of the stage
+file, slices and header totals are updated, and that object type's collision cell lists are rebuilt
+for the affected groups. Nothing that already exists is moved. Every result is checked before
+writing (structure, lists, coverage, offsets, the 255 banana-value limit). Status: confirmed in-game
+(edit test 3).
+
+## Collision and model geometry (plan schema `trcore.edit_plan/3`)
+
+A stage entry can also carry `"collision": [...]` (`remove_box`, `add_polygons`; format in
+`trcore/stc/geometry_edit.py`) and `"model": [...]` (`add_polygons` to a named shape of the stage's model;
+`trcore/nitro/nsbmd_write.py`). Collision tables are rebuilt at the end of the stage file with the kept
+records unchanged and first, cell lists for bits 0–3 are rebuilt, and the collision grid grows when new
+geometry lies outside it (spec §17.3). Model polygons are drawn with the shape's own material and texture;
+the model file is replaced too. Every result is re-read and checked before writing. Status: built, in-game
+test pending (edit test 4, `docs/experiments/edit4_collision/`). `ramdump-compare` also checks the stage's
+model in memory.
+
+## Evidence
+
+The editor GUI lives in `tredit/`. Field meanings are confirmed only where
 the spec's §14 lists an in-game test (start, goals incl. red flag, bumper position, bananas incl. bunch);
 see
 `docs/research_notes/stc_format_spec.md` for the evidence and the experiments that confirm them.
@@ -94,6 +115,11 @@ trcore/lz10.py          strict LZ10 decoder + verified encoder matching the game
 trcore/rom.py           read-only DS ROM access, ROM profile, stage map
 trcore/romwrite.py      verified "replace a file in a NEW ROM copy"
 trcore/stc/edit.py      same-size field edits of known record fields, with structure checks
+trcore/stc/objects.py   add / remove / move goals, bumpers, bananas (pools + collision cell lists)
+trcore/stc/cells.py     per-group collision cell grid: reader, footprint rule, coverage check
+trcore/stc/collision.py collision tables reader (quads, triangles, edges, points) + contact probe
+trcore/stc/geometry_edit.py  remove / add collision geometry, rebuild lists, grow the grid
+trcore/nitro/nsbmd_write.py  add polygons to a stage model's shape
 trcore/editplan.py      JSON edit plan -> new ROM copy + patch record
 trcore/ramdump.py       compare a BizHawk Main RAM dump with the expected stage file
 trcore/nitro/nsbmd.py   read-only NITRO model reader (nodes, structure code, display lists -> triangles)

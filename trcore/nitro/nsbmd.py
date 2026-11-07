@@ -236,6 +236,7 @@ class _DLRunner:
         self.strip: List[Vec3] = []
         self.raw = (0.0, 0.0, 0.0)
         self.tris: List[Tuple[Vec3, Vec3, Vec3]] = []
+        self.polys: List[Tuple[Vec3, ...]] = []         # as drawn: triangles and quads (strips unrolled)
         self.unknown_cmds = set()
 
     def _emit(self, x, y, z):
@@ -245,17 +246,21 @@ class _DLRunner:
         v, p = self.strip, self.prim
         if p == 0 and len(v) == 3:
             self.tris.append((v[0], v[1], v[2]))
+            self.polys.append((v[0], v[1], v[2]))
             self.strip = []
         elif p == 1 and len(v) == 4:
             self.tris += [(v[0], v[1], v[2]), (v[0], v[2], v[3])]
+            self.polys.append((v[0], v[1], v[2], v[3]))
             self.strip = []
         elif p == 2 and len(v) >= 3:
             n = len(v)
             self.tris.append((v[n - 3], v[n - 2], v[n - 1]) if n % 2 else (v[n - 2], v[n - 3], v[n - 1]))
+            self.polys.append(self.tris[-1])
         elif p == 3 and len(v) >= 4 and len(v) % 2 == 0:
             n = len(v)
             a, b, c, d = v[n - 4], v[n - 3], v[n - 2], v[n - 1]
             self.tris += [(a, b, d), (a, d, c)]
+            self.polys.append((a, b, d, c))
 
     def run(self, r: BinReader, start: int, size: int):
         p, end = start, start + size
@@ -349,6 +354,7 @@ def _model_geometry(nsbmd: Nsbmd, model_index: int) -> dict:
     cur = IDENTITY
     notes = []
     tris = []
+    polys = []
     last_node = None
     visible = {}
     i = 0
@@ -390,6 +396,7 @@ def _model_geometry(nsbmd: Nsbmd, model_index: int) -> dict:
                 runner = _DLRunner(cur, stack, m.pos_scale)
                 runner.run(r, sh["dl_offset"], sh["dl_size"])
                 tris += [(a, b, c, si, last_node) for a, b, c in runner.tris]
+                polys += [(pv, si, last_node) for pv in runner.polys]
             i += 2
         elif cmd == 0x06:
             node, _parent, _flags = arg(1), arg(2), arg(3)
@@ -431,7 +438,7 @@ def _model_geometry(nsbmd: Nsbmd, model_index: int) -> dict:
             i += 3
         else:
             raise NitroError(f"unknown SBC command 0x{op:02X} at {i}")
-    return {"triangles": tris, "notes": sorted(set(notes)), "pos_scale": m.pos_scale,
+    return {"triangles": tris, "polygons": polys, "notes": sorted(set(notes)), "pos_scale": m.pos_scale,
             "pos_scale_cmd_in_sbc": pos_scale_in_sbc}
 
 

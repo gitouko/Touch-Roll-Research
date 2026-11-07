@@ -1,7 +1,10 @@
 # Milestone 3 — adding and removing objects: findings and plan
 
-Status: research done (spec §16, Level 2 from game code plus corpus). **Edit test 3 is waiting for the
-owner's "go".**
+Status: research done (spec §16, Level 2 from game code plus corpus). Implemented in
+`trcore/stc/objects.py` (plan schema `trcore.edit_plan/2`). **Edit test 3 PASSED on 2026-11-07** (`docs/experiments/edit3_add_remove/`).
+
+Robustness check: relisting every goal, bumper and banana in place, in all 120 main-game stages at
+once, passes every check below.
 
 ## What has to change when an object is added, removed or moved far
 
@@ -43,7 +46,7 @@ pointers into the pools apart from the slices.
 
 Starts are not part of the cell lists. Adding starts is only useful for party modes and is out of scope.
 
-## Edit test 3 (proposed) — one ROM copy, three stages, original ROM as the base
+## Edit test 3 — one ROM copy, three stages, original ROM as the base
 
 | # | Stage | Edit | Prediction |
 |---|---|---|---|

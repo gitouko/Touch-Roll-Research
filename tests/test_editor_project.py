@@ -9,7 +9,7 @@ from trcore import lz10
 from trcore.editplan import load_plan
 from trcore.rom import NdsRom
 from trcore.stc.edit import apply_edits
-from tests.synth import IDENTITY, build_stage
+from tests.synth import IDENTITY, build_stage, with_cell_lists
 from tests.synth_nsbmd import build_nsbmd
 from tests.synth_rom import build_rom
 from tredit.project import (EditorError, Project, angle_to_degrees, find_original_rom, goal_heading,
@@ -38,7 +38,8 @@ class SynthProfiledRom(NdsRom):
 
 
 def make_synth(tmp):
-    stage = build_stage(goals=((0, IDENTITY, (0, 0, -10)),), bananas=((1, 0.5, 2, 0), (-1, 0.5, 2, 1)))
+    stage = with_cell_lists(build_stage(goals=((0, IDENTITY, (0, 0, -10)),),
+                                        bananas=((1, 0.5, 2, 0), (-1, 0.5, 2, 1))))
     rom_bytes = build_rom([("stcoli", "s1_stc.lz", lz10.encode(stage)),
                            ("stcoli", "s2_stc.lz", lz10.encode(build_stage(groups=("A", "B")))),
                            ("model/stage", "s1_nsbmd.lz", lz10.encode(build_nsbmd()))])
@@ -216,6 +217,70 @@ class ProjectBasics(unittest.TestCase):
         self.assertEqual(chain["its_plan"]["stages"][0]["edits"][0]["target"], "pool_A[0].u32_30")
 
 
+class ObjectsInTheEditor(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix="tredit_obj_")
+        self.base = make_synth(self.tmp)
+        self.p = open_synth(self.base)
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def ids(self):
+        return [o["id"] for o in self.p.stage("s1").objects()]
+
+    def test_add_delete_duplicate_reset_undo(self):
+        p = self.p
+        nb = p.add_object("s1", "banana", [3, 0.5, -3], bunch=True)
+        ng = p.add_object("s1", "goal", [0, 0, 5], heading=p.default_heading_towards_start("s1", (0, 0, 5)))
+        objs = {o["id"]: o for o in p.stage("s1").objects()}
+        self.assertTrue(objs[nb]["new"] and objs[nb]["bunch"])
+        self.assertEqual(objs[ng]["label"], "New goal 1")
+        self.assertAlmostEqual(objs[ng]["heading"], 180.0)               # start (0, 0, 10) is towards +z
+        p.change("s1", ng, "heading", 90)
+        p.change("s1", ng, "red", True)
+        p.delete_object("s1", "banana:0")
+        self.assertNotIn("banana:0", self.ids())
+        dup = p.duplicate_object("s1", "banana:1")
+        self.assertEqual({o["id"]: o for o in p.stage("s1").objects()}[dup]["position"], [0.0, 0.5, 2.0])
+        self.assertEqual(p.plan()["schema"], "trcore.edit_plan/2")
+        self.assertEqual(p.stage("s1").banana_value, 5 + 5 + 5)          # bunch kept, new bunch, duplicate of a bunch
+        p.reset_object("s1", "banana:0")                                  # undelete
+        self.assertIn("banana:0", self.ids())
+        for _ in range(7):
+            p.undo()
+        self.assertFalse(p.changed_stages())
+        for _ in range(7):
+            p.redo()
+        self.assertIn(ng, self.ids())
+        with self.assertRaises(EditorError):
+            p.delete_object("s1", "start:0")
+        with self.assertRaises(EditorError):
+            p.add_object("s1", "banana", [500, 0.5, 500])
+
+    def test_banana_value_limit(self):
+        p = self.p
+        for i in range(49):
+            p.add_object("s1", "banana", [i * 0.1 - 2, 0.5, 0], bunch=True)   # 6 + 245 = 251
+        with self.assertRaises(EditorError):
+            p.add_object("s1", "banana", [3, 0.5, 3], bunch=True)          # would be 256
+        p.add_object("s1", "banana", [3, 0.5, 3])                            # 252 is fine
+        self.assertEqual(p.stage("s1").banana_value, 252)
+
+    def test_save_import_round_trip_with_objects(self):
+        p = self.p
+        p.delete_object("s1", "banana:1")
+        p.add_object("s1", "goal", [2, 0, -2])
+        p.change("s1", "banana:0", "position", [1, 0.5, 2.5])
+        out = os.path.join(self.tmp, "objs.nds")
+        rec = p.save(out)
+        self.assertEqual(rec["plan_schema"], "trcore.edit_plan/2")
+        self.assertEqual(verify_saved_rom(out, p), [])
+        q = open_synth(self.base)
+        self.assertEqual(q.import_plan(os.path.splitext(out)[0] + ".patch.json"), 3)
+        self.assertEqual(q.stage("s1").current, p.stage("s1").current)
+
+
 class Angles(unittest.TestCase):
     def test_conventions(self):
         self.assertEqual(angle_to_degrees(0x4000), 90.0)
@@ -265,20 +330,43 @@ class ReproduceVerifiedEdits(unittest.TestCase):
     def test_edit_test_2(self):
         self.reproduce("docs/experiments/edit2_bumpers_goals/plan.json")
 
-    def test_collision_warning_for_far_moves(self):
+    def test_far_moves_are_relisted_small_moves_stay_field_edits(self):
         p = Project(REAL_ROM, self.rom)
         objs = {o["id"]: o for o in p.stage("smb1_be01").objects()}
         x, y, z = objs["banana:0"]["position"]
-        p.change("smb1_be01", "banana:0", "position", [x + 1.0, y, z])          # small move: still listed
-        o = {o["id"]: o for o in p.stage("smb1_be01").objects()}["banana:0"]
-        self.assertIsNone(o["collision_warning"])
-        p.change("smb1_be01", "banana:0", "position", [x + 9.0, y, z])          # far move: not listed there
-        o = {o["id"]: o for o in p.stage("smb1_be01").objects()}["banana:0"]
-        self.assertIn("do not list this banana", o["collision_warning"])
-        p.change("smb1_be01", "goal:0", "position", [6.0, 0.0, 0.5])           # goal nudge: fine
-        self.assertIsNone({o["id"]: o for o in p.stage("smb1_be01").objects()}["goal:0"]["collision_warning"])
-        p.change("smb1_be01", "banana:1", "position", [3.45, 0.5, 9.0])         # off the grid
-        self.assertIn("outside", {o["id"]: o for o in p.stage("smb1_be01").objects()}["banana:1"]["collision_warning"])
+        p.change("smb1_be01", "banana:0", "position", [x + 1.0, y, z])          # still in its cells
+        st = p.stage("smb1_be01")
+        self.assertEqual([e["target"] for e in st.plan_edits()], ["pool_C[0].position"])
+        self.assertEqual(st.plan_ops(), [])
+        p.change("smb1_be01", "banana:0", "position", [x + 9.0, y, z])          # leaves its cells
+        self.assertEqual(st.plan_edits(), [])
+        self.assertEqual([o["op"] for o in st.plan_ops()], ["move"])
+        from trcore.stc import cells as CL
+        g = CL.read_grids(st.current)[0]
+        self.assertIsNone(CL.coverage_problem(g, "banana", 0, (x + 9.0, y, z)))
+        with self.assertRaises(EditorError):                                      # off the grid: refused
+            p.change("smb1_be01", "banana:1", "position", [3.45, 0.5, 40.0])
+
+    def test_edit_test_3_through_editor_operations(self):
+        """Adds, deletes and a far move made with the editor give the bytes of edit test 3 (seen in-game)."""
+        from trcore.stc.objects import apply_object_ops
+        plan = load_plan(os.path.join(ROOT, "docs/experiments/edit3_add_remove/plan.json"))
+        by_key = {s["stage_key"]: s for s in plan["stages"]}
+        p = Project(REAL_ROM, self.rom)
+        p.delete_object("smb1_be01", "banana:4")
+        p.add_object("smb1_be01", "banana", [-5.0, 0.5, -2.0])
+        p.add_object("smb1_be01", "goal", [-3.5, 0.0, 0.0],
+                     heading=p.default_heading_towards_start("smb1_be01", (-3.5, 0.0, 0.0)))
+        p.add_object("smb1_ad02", "bumper", [0.0, 0.0, -20.0])
+        p.delete_object("smb1_ad02", "bumper:8")
+        p.change("smbds_023", "banana:11", "position", [0.0, 0.5, 30.5])
+        for key in ("smb1_be01", "smb1_ad02"):
+            st = p.stage(key)
+            expect = apply_object_ops(st.original, by_key[key]["objects"], key)[0]
+            self.assertEqual(st.current, expect, key)
+        st = p.stage("smbds_023")
+        self.assertEqual(st.current, apply_object_ops(st.original, by_key["smbds_023"]["objects"], "x")[0])
+        self.assertEqual(p.plan()["schema"], "trcore.edit_plan/2")
 
     def test_every_main_stage_opens_with_a_model(self):
         p = Project(REAL_ROM, self.rom)

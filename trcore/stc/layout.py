@@ -78,6 +78,19 @@ EVIDENCE = {
                                  "indices local to the group's slice; the ball only tests objects listed in its cell",
             "basis": "game code 0x02044C68 (lookup), 0x020444F4 (ball collision), 0x020AC0F4 (banana pickup); all 120 "
                      "main-game stages: every list sorted, unique, in range, every object in >= 1 cell"},
+    "E25": {"level": 2, "claim": "Collision tables: +0x8C/+0x90 quads (0x34: u32 0, P, N, dual vectors E1 E2; "
+                                 "parallelogram test u<=1, v<=1), +0x84/+0x88 triangles (same record, u+v<=1), "
+                                 "+0x7C/+0x80 edges (0x20: start, unit direction, length, u32 0), +0x74/+0x78 corner "
+                                 "points (0x10: point, u32 0); faces push the ball out only from the front",
+            "basis": "game code 0x020444F4 dispatch, 0x02046460 (quads), 0x02046050 (triangles), 0x02045DE0 (edges), "
+                     "0x02045C1C (points); 120 main stages: spare words always 0, normals unit, stored vectors equal "
+                     "the ones recomputed from the corners (98% within 2/4096, all normals same sign)"},
+    "E26": {"level": 2, "claim": "Collision is generated from the stage model at rest: model parallelogram quads -> "
+                                 "quads, other quads -> two triangles (either diagonal), triangles -> triangles; edges "
+                                 "and corner points of the faces; cells list each piece within its x/z extent + 0.5",
+            "basis": "120 main stages: 96% of collision faces have every corner within 0.02 of a model corner; "
+                     "95% of model parallelograms are collision quads; cell rule exact for 96-97% of pieces, "
+                     "all within extent + 0.75"},
     "E24": {"level": 2, "claim": "Header pool totals size runtime arrays (goal 0x2C-byte structs, bumper and banana "
                                  "state bytes, indexed by group order + local index); banana value total is summed by "
                                  "walking `total` 0x10-byte records from group 0's slice, so each pool must stay one "
@@ -154,6 +167,14 @@ IN_GAME = {
     "E13": "objects in a moving group are placed in its frame and move with it: edit test 2, W5-6; "
            "matrices are applied transposed (world = M^T * local), goal front = local +z: edit test 2, W1-3",
 }
+IN_GAME.update({
+    "E22": "stage files may grow: pools, lists and cell arrays appended at the end are loaded and relocated: "
+           "edit test 3",
+    "E23": "the ball only touches objects listed in its cell (control banana not collectable; same move with "
+           "lists rebuilt collectable): edit test 3, W1-2",
+    "E24": "pools rebuilt contiguously at the end with slices and totals updated: banana/goal/bumper added, "
+           "banana/bumper removed, all working: edit test 3, W1-1 and W5-2",
+})
 IN_GAME["E05"] += "; start +0x00 = start position: edit test 2, W1-2"
 IN_GAME["E07"] += "; pool A +0x00 = goal orientation (applied transposed): edit test 2, W1-3"
 for _k, _v in IN_GAME.items():

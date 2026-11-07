@@ -346,6 +346,27 @@ def cmd_cells(args) -> int:
     return 0
 
 
+def cmd_collision(args) -> int:
+    from collections import Counter
+    from .stagemodel import load_stage_model
+    from .stc.collision import survey_stage as coll_survey
+    rom = _load_rom(args.rom)
+    keys = [s["stage_key"] for w in rom.stage_map()["worlds"] for s in w["stages"]] if args.main_only else \
+        sorted(p[len("stcoli/"):-len("_stc.lz")] for p in rom.id_by_path if p.startswith("stcoli/"))
+    total = Counter()
+    for k in keys:
+        sm = load_stage_model(rom, k)
+        total.update(coll_survey(rom.stage_file_decoded(k), sm["triangles"] if sm else None))
+    _p(f"stages: {len(keys)}" + (" (main game)" if args.main_only else " (all stage files)"))
+    for k, v in sorted(total.items()):
+        _p(f"  {k}: {v}")
+    if args.out:
+        w = R.OutputWriter(args.out, [])
+        w.write_text("collision_survey.json", R.dumps({"schema": "trcore.collision_survey/1", "main_only": args.main_only,
+                                                       "stages": len(keys), "counts": dict(sorted(total.items()))}))
+    return 0
+
+
 def _source_bytes(path: str) -> bytes:
     from . import lz10
     with open(path, "rb") as fh:
@@ -415,6 +436,34 @@ def cmd_stage_edit(args) -> int:
         _p(f"{st['where'] or st['file']}:")
         for e in st["edits"]:
             _p(f"  {e['target']} @{e['offset']}: {e['old_value']} -> {e['new_value']}")
+        if st.get("objects"):
+            for op in st["objects"]["ops"]:
+                where = op.get("position") or op.get("to") or op.get("expect_position")
+                _p(f"  {op['op']} {op['kind']}" + (f" {op['index']}" if "index" in op else "") + f" at {where}")
+            for k, v in st["objects"]["cells"].items():
+                _p(f"    {k}: {v['objects']} object(s), {v['cells_rewritten']} cell list(s) rewritten")
+            _p(f"    decoded size {st['decoded_size']} -> {st['decoded_size_after']}, "
+               f"banana value {st['objects']['banana_value']}")
+        if st.get("collision"):
+            for op in st["collision"]["ops"]:
+                counts = ", ".join(f"{k} {v}" for k, v in op.items()
+                                   if isinstance(v, int) and k != "group" and v)
+                _p(f"  collision {op['op']} (group {op['group']}){': ' + op['label'] if op.get('label') else ''}")
+                _p(f"    {counts}")
+            for g, gr in st["collision"]["groups"].items():
+                tabs = ", ".join(f"{k} {v['kept']}+{v['new']}" for k, v in gr["tables"].items())
+                grid = gr["grid"]
+                _p(f"    group {g}: tables (kept+new) {tabs}; grid {grid['before'][0]}x{grid['before'][1]}"
+                   + (f" -> {grid['after'][0]}x{grid['after'][1]}" if grid["grown"] else "")
+                   + f"; {gr['cells_rewritten']} cell(s) rewritten")
+            _p(f"    decoded size {st['decoded_size']} -> {st['decoded_size_after']}")
+        if st.get("model"):
+            for op in st["model"]["ops"]:
+                _p(f"  model: {op['polygons_added']} polygon(s) added to shape {op['shape']} "
+                   f"(read back within {op['readback_max_error']:.4f})")
+                for sub in op.get("ops", []):
+                    _p(f"    {sub['polygons']} x {sub.get('label') or ''}")
+            _p(f"    {st['model']['file']}: {st['model']['size_before']} -> {st['model']['size_after']} bytes")
     for r in rec["replacements"]:
         _p(f"  {r['file']}: {r['placement']}, {r['old']['size']} -> {r['new']['size']} bytes")
     _p(f"wrote {args.out}  sha1 {rec['output_rom']['sha1']}")
@@ -426,7 +475,8 @@ def cmd_ramdump_compare(args) -> int:
     from . import ramdump
     rom = _load_rom(args.rom)
     with open(args.dump, "rb") as fh:
-        a = ramdump.analyze_dump(fh.read(), rom)
+        dump_bytes = fh.read()
+    a = ramdump.analyze_dump(dump_bytes, rom)
     _p(f"stage {a['stage_id_loaded']} ({a['stage_key']}) at {a['stage_data_ptr']}, {a['expected_size']} bytes")
     w = a["words"]
     _p(f"words: {w['equal']} equal, {w['relocated']} offset->pointer, {w['other']} other (of {w['total']}); "
@@ -436,6 +486,14 @@ def cmd_ramdump_compare(args) -> int:
     for d in a["other_diffs"][:25]:
         _p(f"  other: {d['offset']} {d['field']}: file {d['file']} ram {d['ram']}")
     result = {k: v for k, v in a.items() if not k.startswith("_")}
+    model = ramdump.analyze_model(dump_bytes, rom, a["stage_key"])
+    result["model"] = model
+    if model.get("found"):
+        _p(f"model at {model['address']}: {model['words_different']} of {model['words_total']} words differ "
+           f"({model['different_in_material_block']} in the material block, {model['different_elsewhere']} elsewhere); "
+           f"display lists equal: {model['display_lists_equal']}")
+    else:
+        _p(f"model: not found ({model.get('reason')})")
     code = 0
     if args.against:
         with open(args.against, "rb") as fh:
@@ -495,6 +553,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--main-only", action="store_true", help="only the 120 stages used by the 12 worlds")
     p.add_argument("--out", help="directory for cell_survey.json")
     p.set_defaults(func=cmd_cells)
+    p = sub.add_parser("collision", help="decode every stage's collision geometry and check it against the rules")
+    p.add_argument("rom")
+    p.add_argument("--main-only", action="store_true", help="only the 120 stages used by the 12 worlds")
+    p.add_argument("--out", help="directory for collision_survey.json")
+    p.set_defaults(func=cmd_collision)
     p = sub.add_parser("rom-replace", help="write a NEW ROM copy with one NitroFS file replaced")
     p.add_argument("rom", help="input ROM (never modified)")
     p.add_argument("out", help="new output .nds path (must not exist)")
