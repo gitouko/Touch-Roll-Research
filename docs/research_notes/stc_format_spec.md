@@ -189,6 +189,7 @@ which files were swapped, and what was seen (screenshot if possible).
 * **Edit test 2 — PASSED (2026-11-06):** red-goal flag both ways, goal rotation (matrix convention),
   start position, bumper position, object inside a moving group (§14).
 * **Q6 — Collision tables:** decode `smb1_be01` (one group, simple geometry) against its model.
+  The model itself can now be read (§15), so the collision tables can be compared with real geometry.
 * **Q7 — Meaning of 0x0C, 0x10, 0x34, `box2`, descriptor +0x58…+0x70.**
 
 ## 9. In-game observations reported by the project owner (2026-11-06)
@@ -307,4 +308,35 @@ A rotation by angle a about +y (positive = turn left, as for the start angle) is
 Not yet confirmed in-game: bumper rotation (not visible on round bumpers), whether a converted red goal
 counts towards Studio One, the meaning of descriptor fields other than the slices, and everything in
 §5's tables (collision).
+
+## 15. Stage models (`model/stage/<key>_nsbmd.lz`) and how they line up with the stage file
+
+Used by the editor's 2D map. Reproduce every number below with
+`py -3 -m trcore stage-models "<ROM>.nds" --out generated\trcore` (ROM required; nothing is written to it).
+
+* **Same name as the stage file (Level 1, code):** ARM9 0x020C531C holds `model/stage/%s_nsbmd.lz`,
+  next to `stcoli/%s_stc.lz` at 0x020C5370. 213 of the 235 stage files have a model. The 22 without
+  one are 21 leftover files that have no entry in the game's stage-name table (never loaded) and
+  `smbds_009`, which has a name but no world slot. Every stage used by the 12 worlds has a model.
+* **Reader (Level 2):** `trcore/nitro/nsbmd.py` reads the NITRO model format: resource dictionaries,
+  node transforms (including the compressed "pivot" rotations), the structure byte code that places
+  shapes, and the GX display lists (all vertex command forms). In **all 213** models the decoded
+  triangle count equals the model header's `triangles + 2 × quads`. There were no parse errors.
+* **Model space = stage space (Level 2):** with no extra transform, objects sit on the model's surfaces:
+
+  | Object | on a surface (gap < 0.02) | 0.02–2 above | more than 2 above | no surface below |
+  |---|---|---|---|---|
+  | start | 171 | 73 | 4 | 0 |
+  | goal | 124 | 16 | 7 | 10 |
+  | bumper | 139 | 27 | 0 | 0 |
+  | banana | 2 | 1,909 | 183 | 149 |
+
+  Bananas float about 0.25–0.6 above the floor by design. Starts and goals sit on it.
+* **Moving parts (Level 2):** a group whose name matches a model node (for example `MOT_bumper01`)
+  stores the **inverse** of that node's rest transform in 393 of 417 cases (applying the group
+  transform, then the node, gives the identity). Together with the floor fit above, this means
+  stored object positions are their positions at the stage's **rest pose**, in stage coordinates.
+  W5-6 (edit test 2) confirmed in-game that such objects move with their part.
+* **Not decoded:** materials and textures (names only), animations (`.nsbca`, `.nsbta`, …). The 2D map
+  shows moving parts at their rest pose.
 

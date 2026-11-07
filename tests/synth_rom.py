@@ -12,38 +12,40 @@ def _align(x, a=0x200):
     return (x + a - 1) & ~(a - 1)
 
 
+def _parent(d):
+    return d.rsplit("/", 1)[0] if "/" in d else ""
+
+
 def build_rom(files, size=0x40000, game_code=b"TEST", signature=True):
-    """files: list of (dir, name, bytes) with one directory level (dir may be '')."""
-    dirs = sorted({d for d, _, _ in files if d})
-    root = [(n, b) for d, n, b in files if not d]
-    by_dir = {d: [(n, b) for dd, n, b in files if dd == d] for d in dirs}
-    ordered = root + [x for d in dirs for x in by_dir[d]]
-    # FNT
-    ndirs = 1 + len(dirs)
-    subs = []
-    first_ids = []
-    fid = 0
-    root_sub = bytearray()
-    for n, _ in root:
-        root_sub += bytes([len(n)]) + n.encode()
-    for i, d in enumerate(dirs):
-        root_sub += bytes([0x80 | len(d)]) + d.encode() + struct.pack("<H", 0xF001 + i)
-    root_sub += b"\0"
-    subs.append(root_sub)
-    first_ids.append(0)
-    fid = len(root)
+    """files: list of (dir, name, bytes); dir may be '' or nested like 'model/stage'."""
+    dirs = set()
+    for d, _, _ in files:
+        parts = d.split("/") if d else []
+        for i in range(1, len(parts) + 1):
+            dirs.add("/".join(parts[:i]))
+    dirs = [""] + sorted(dirs)
+    index = {d: i for i, d in enumerate(dirs)}
+    files_in = {d: [(n, b) for dd, n, b in files if dd == d] for d in dirs}
+    ordered = [x for d in dirs for x in files_in[d]]
+    subs, first_ids, fid = [], [], 0
     for d in dirs:
         sub = bytearray()
-        for n, _ in by_dir[d]:
+        for n, _ in files_in[d]:
             sub += bytes([len(n)]) + n.encode()
+        for c in dirs:
+            if c and _parent(c) == d:
+                name = c.rsplit("/", 1)[-1]
+                sub += bytes([0x80 | len(name)]) + name.encode() + struct.pack("<H", 0xF000 + index[c])
         sub += b"\0"
         subs.append(sub)
         first_ids.append(fid)
-        fid += len(by_dir[d])
+        fid += len(files_in[d])
+    ndirs = len(dirs)
     main = bytearray()
     off = 8 * ndirs
     for i, sub in enumerate(subs):
-        parent = ndirs if i == 0 else 0xF000
+        d = dirs[i]
+        parent = ndirs if i == 0 else 0xF000 + index[_parent(d)]
         main += struct.pack("<IHH", off, first_ids[i], parent)
         off += len(sub)
     fnt = bytes(main) + b"".join(bytes(s) for s in subs)

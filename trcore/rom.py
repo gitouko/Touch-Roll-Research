@@ -44,6 +44,7 @@ PROFILES = {
         "stage_name_table": 0x020C4B4C,       # u32 pointers to C strings, ARM9
         "stage_name_count": 250,
         "stage_file_format": "stcoli/{}_stc.lz",  # ARM9 0x020C5370 holds 'stcoli/%s_stc.lz'
+        "stage_model_format": "model/stage/{}_nsbmd.lz",  # ARM9 0x020C531C holds 'model/stage/%s_nsbmd.lz'
         "world_table": 0x02200E70,            # overlay 0: u32 pointers to world structs
         "world_table_overlay": 0,
         "world_count": 12,
@@ -318,6 +319,15 @@ class NdsRom:
         prof = self._need_profile()
         data, _ = lz10.decode(self.file_bytes(prof["stage_file_format"].format(stage_key)))
         return data
+
+    def stage_model_decoded(self, stage_key: str) -> Optional[bytes]:
+        """The stage's own model (NSBMD), or None when the ROM has no model file for it."""
+        prof = self._need_profile()
+        path = prof["stage_model_format"].format(stage_key)
+        if path not in self.id_by_path:
+            return None
+        data = self.file_bytes(path)
+        return lz10.decode(data)[0] if data[:1] == b"\x10" else data
 
 
 def stage_map_markdown(m: dict) -> str:

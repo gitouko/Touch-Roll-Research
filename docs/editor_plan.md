@@ -7,9 +7,16 @@ Decisions by the project owner (2026-11-06), mapped onto the contract's mileston
   adding/removing objects and collision editing.
 * Engine: `trcore` (Python, standard library), which already reads/validates stages, writes verified
   ROM copies and checks results against emulator memory.
-* UI toolkit (proposal, to confirm before Milestone 2 starts): **PySide6 / Qt for Python** — native
-  desktop widgets, LGPL-3 licence (allows a separately distributed app), and Qt's OpenGL support for
-  the later 3D view, so the 2D → 3D transition does not need a rewrite.
+* UI toolkit (confirmed 2026-11-06): **PySide6 / Qt for Python** — native desktop widgets, LGPL-3
+  licence (allows a separately distributed app), and Qt's OpenGL support for the later 3D view, so the
+  2D → 3D transition does not need a rewrite.
+* Map background (owner's choice, 2026-11-06): a top-down outline of the stage's own model read from
+  the ROM (spec §15).
+* Saving (owner's choice): both modes — "Save" replaces the editor's own previous copy (verified),
+  "Save as new copy" always writes a new file.
+
+**Status:** Milestone 2 is built as editor 0.1 (`tredit/`, guide in `docs/editor_v1.md`). It is waiting
+for the owner's acceptance test.
 
 ## Views
 * **2D top-down map** from the first version on.

@@ -35,7 +35,7 @@ def load_plan(path: str) -> dict:
     return plan
 
 
-def build_edit_rom(rom_path: str, out_path: str, plan: dict) -> dict:
+def build_edit_rom(rom_path: str, out_path: str, plan: dict, replace_own: bool = False) -> dict:
     rom = NdsRom.from_file(rom_path)
     sha1 = hashlib.sha1(rom.data).hexdigest()
     if plan.get("base_rom_sha1") and plan["base_rom_sha1"].lower() != sha1:
@@ -64,4 +64,5 @@ def build_edit_rom(rom_path: str, out_path: str, plan: dict) -> dict:
     return romwrite.write_rom_copy_multi(
         rom_path, out_path, replacements, note=plan.get("title"),
         extra={"plan_schema": PLAN_SCHEMA, "stage_edits": stage_records,
-               "status": "generated - not yet verified in-game"})
+               "status": "generated - not yet verified in-game", "plan": plan},
+        replace_own=replace_own)

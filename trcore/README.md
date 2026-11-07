@@ -5,7 +5,8 @@ every `.stc` stage file into a lossless, evidence-annotated document, reads the 
 ROM, and can write **new ROM copies** with replaced files. It never modifies your original ROM, the
 repository's `data/`, or anything it did not create.
 
-Requirements: Python 3.8 or newer, standard library only. Run everything from the repository root.
+Requirements: Python 3.8 or newer, standard library only (the editor in `tredit/` additionally needs
+Python 3.10+ and PySide6). Run everything from the repository root.
 
 ## Commands
 
@@ -28,7 +29,11 @@ py -3 -m trcore rom-replace "Touch & Roll (USA).nds" my_copy.nds stcoli/smb1_be0
 py -3 -m trcore make-gate "Touch & Roll (USA).nds" TR_gate_W1-1_W1-2.nds
 py -3 -m trcore stage-edit "Touch & Roll (USA).nds" TR_edit1_World1.nds docs\experiments\edit1_world1\plan.json
 py -3 -m trcore ramdump-compare dump.bin --rom "Touch & Roll (USA).nds"
+py -3 -m trcore stage-models "Touch & Roll (USA).nds" --out generated\trcore   :: model reader + floor-fit check
 ```
+
+The desktop editor built on trcore lives in `tredit/`; start it with `run_editor.bat` (see
+`docs/editor_v1.md`).
 
 Set `TRCORE_ROM` to your ROM path to also run the ROM tests (and `pip install lupa` to run the
 BizHawk script test under real Lua). See `docs/round_trip_gate.md` for the in-game gate and
@@ -91,6 +96,8 @@ trcore/romwrite.py      verified "replace a file in a NEW ROM copy"
 trcore/stc/edit.py      same-size field edits of known record fields, with structure checks
 trcore/editplan.py      JSON edit plan -> new ROM copy + patch record
 trcore/ramdump.py       compare a BizHawk Main RAM dump with the expected stage file
+trcore/nitro/nsbmd.py   read-only NITRO model reader (nodes, structure code, display lists -> triangles)
+trcore/stagemodel.py    a stage's own model in stage coordinates + the whole-ROM floor-fit survey
 trcore/binreader.py     bounds-checked LE reads, Q20.12
 trcore/assets.py        content classification, name parsing, corpus index
 trcore/stc/layout.py    layout constants + evidence registry (E01..E21, in-game confirmations)

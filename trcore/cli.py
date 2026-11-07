@@ -304,6 +304,28 @@ def cmd_stagemap(args) -> int:
     return 1 if m["problems"] else 0
 
 
+def cmd_stage_models(args) -> int:
+    from .stagemodel import survey
+    rom = _load_rom(args.rom)
+    rep = survey(rom)
+    _p(f"stage files: {rep['stage_files']}, models checked: {rep['models_checked']}, "
+       f"without model: {len(rep['stage_files_without_model'])} "
+       f"({len(rep['stage_files_without_model_that_have_a_name'])} of them have a name in the game's table)")
+    _p(f"triangle-count mismatches: {len(rep['triangle_count_mismatches'])}, parse errors: {len(rep['parse_errors'])}")
+    _p("object height above the model surface below it:")
+    for k, v in rep["object_height_above_model_surface"].items():
+        _p(f"  {k:7s} " + ", ".join(f"{b}: {n}" for b, n in sorted(v.items())))
+    _p("group transform vs model node of the same name: " +
+       ", ".join(f"{k}: {n}" for k, n in rep["group_transform_vs_model_node"].items()))
+    if args.out:
+        w = R.OutputWriter(args.out, [])
+        w.write_text("stage_model_survey.json", R.dumps(rep))
+        _p(f"wrote stage_model_survey.json to {w.out_dir}")
+    for e in rep["parse_errors"]:
+        _p(f"PROBLEM: {e}")
+    return 1 if rep["parse_errors"] or rep["triangle_count_mismatches"] else 0
+
+
 def _source_bytes(path: str) -> bytes:
     from . import lz10
     with open(path, "rb") as fh:
@@ -444,6 +466,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("rom")
     p.add_argument("--out", default=None, help="write stage_map.json and stage_map.md here")
     p.set_defaults(func=cmd_stagemap)
+    p = sub.add_parser("stage-models", help="check every stage model against its stage file")
+    p.add_argument("rom")
+    p.add_argument("--out", help="directory for stage_model_survey.json")
+    p.set_defaults(func=cmd_stage_models)
     p = sub.add_parser("rom-replace", help="write a NEW ROM copy with one NitroFS file replaced")
     p.add_argument("rom", help="input ROM (never modified)")
     p.add_argument("out", help="new output .nds path (must not exist)")
@@ -473,6 +499,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Optional[List[str]] = None) -> int:
     from .lz10 import LZ10EncodeError, LZ10Error
     from .ramdump import DumpError
+    from .nitro.nsbmd import NitroError
     from .rom import RomError
     ap = build_parser()
     args = ap.parse_args(argv)
@@ -490,7 +517,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     except (OSError, R.OutputRefused) as exc:
         _p(f"error: {exc}")
         return 2
-    except (RomError, DumpError, LZ10Error, LZ10EncodeError) as exc:
+    except (RomError, DumpError, LZ10Error, LZ10EncodeError, NitroError) as exc:
         _p(f"error: {exc}")
         return 1
 
