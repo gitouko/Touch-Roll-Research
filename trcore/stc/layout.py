@@ -54,7 +54,8 @@ EVIDENCE = {
     "E15": {"level": 2, "claim": "Descriptor +0x54 = offset of an nx*nz table of 8-byte entries",
             "basis": "table end aligns with next known region in 404/428 groups"},
     "E16": {"level": 2, "claim": "Descriptor (count, offset) tables: +0x7C stride 0x20, +0x84 stride 0x34, "
-                                 "+0x8C stride 0x34; +0x74 stride unknown. Contents unknown (collision candidates)",
+                                 "+0x8C stride 0x34; +0x74 stride 0x10 per game code (E23; not yet used by this "
+                                 "parser). Contents: collision primitives, not decoded",
             "basis": "stride fits 183/183 (+0x7C, +0x8C), 181/181 (+0x84)"},
     "E17": {"level": 2, "claim": "0x4C..0x63 = six Q20.12 values, default (0,0,0,1,1,1); non-default iff u32(0x08)==2",
             "basis": "7/7 non-default files have u32(0x08)==2"},
@@ -65,6 +66,23 @@ EVIDENCE = {
             "basis": "never larger than u32(0x14) in the corpus"},
     "E20": {"level": 1, "claim": "Variant 'no_start_slot': no valid start pair; pool totals at 0x3C/0x40/0x44",
             "basis": "single file in corpus; totals equal its group slice sums exactly"},
+    "E22": {"level": 2, "claim": "Load-time relocation (complete list): header 0x18, 0x3C; descriptor +0x04, +0x08, "
+                                 "+0x54, +0x78, +0x80, +0x88, +0x90, +0x98, +0xA0, +0xA8, +0xAC (tree, recursive); "
+                                 "each cell entry +0x04 and every offset in the array it points to",
+            "basis": "game code ARM9 0x02046CC4..0x02046F74 (USA rev 0); matches the offset->pointer words seen in "
+                     "all RAM dumps"},
+    "E23": {"level": 2, "claim": "Cell entry = u32 type mask + offset of one list offset per set bit (bit order); "
+                                 "lists are sorted u16 indices ending in 0xFFFF; bits 0-3 index tables +0x90/+0x88/+0x80/"
+                                 "+0x78 (records 0x34 by corpus fit; 0x34, 0x20, 0x10 by code), bit 4 goals, "
+                                 "bit 5 bumpers, bit 6 bananas; "
+                                 "indices local to the group's slice; the ball only tests objects listed in its cell",
+            "basis": "game code 0x02044C68 (lookup), 0x020444F4 (ball collision), 0x020AC0F4 (banana pickup); all 120 "
+                     "main-game stages: every list sorted, unique, in range, every object in >= 1 cell"},
+    "E24": {"level": 2, "claim": "Header pool totals size runtime arrays (goal 0x2C-byte structs, bumper and banana "
+                                 "state bytes, indexed by group order + local index); banana value total is summed by "
+                                 "walking `total` 0x10-byte records from group 0's slice, so each pool must stay one "
+                                 "contiguous array in group order",
+            "basis": "game code 0x020ABF98 (goals), 0x02042334 (bumpers), 0x020ACB10 / 0x020AC404 (bananas)"},
 }
 
 HEADER_SIZE = 0xE4          # 0x00..0xE3 (fixed fields + reserved zero block)

@@ -39,7 +39,8 @@ LEGEND_HTML = """<b>Map legend</b><br>
 <span style='color:#46a0ff'>&#9644;</span> goal (arrow = front) &nbsp; <span style='color:#f03c3c'>&#9644;</span> red goal<br>
 <span style='color:#e646e6'>&#9679;</span> bumper &nbsp; <span style='color:#ffdc28'>&#9679;</span> banana,
 three dots = bunch (5)<br>
-white ring = changed &nbsp; dashed outline = in a moving part<br>
+white ring = changed &nbsp; <span style='color:#ff8c00'>orange dashed ring</span> = collision warning<br>
+dashed outline = in a moving part<br>
 Top view: forward (the start's direction at angle 0) is up, x to the right.<br>
 Drag to move &middot; arrows / PgUp / PgDn nudge &middot; Q / E turn (Shift = 1&deg;) &middot;
 wheel zoom &middot; right-drag pan &middot; F fit"""
@@ -159,7 +160,12 @@ class PropertiesPanel(QtWidgets.QWidget):
                 notes.append("Facing: 0° = towards -z (up on the top view); larger turns left.")
             if k == "goal":
                 notes.append("Facing is the direction of the goal's front (the side you roll through).")
+            if obj.get("collision_warning"):
+                notes.insert(0, "⚠ Collision: " + obj["collision_warning"] + ". The game only checks an object "
+                             "from the collision cells listed for it, so here it may not be collectable or solid. "
+                             "Move it back closer, or wait for the next version, which updates these lists.")
             notes.append("Values are shown as stored (1/4096 steps).")
+            self.note.setStyleSheet("color: #ffa040;" if obj.get("collision_warning") else "color: #8a8f9c;")
             self.note.setText("\n".join(notes))
         finally:
             for w in widgets:
@@ -562,6 +568,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def move_object(self, oid, pos):
         self.do_change(oid, "position", pos, f"move {oid}")
+        o = self.objects.get(oid)
+        if o and o.get("collision_warning"):
+            self.statusBar().showMessage(f"⚠ {oid}: {o['collision_warning']} (see the Selected panel)", 10000)
 
     def property_changed(self, oid, prop, value):
         self.do_change(oid, prop, value, f"{prop} of {oid}")

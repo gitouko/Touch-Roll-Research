@@ -175,7 +175,12 @@ class Marker(QtWidgets.QGraphicsItem):
             back = QtCore.QPointF(hv.x() * (r + 5), hv.y() * (r + 5))
             painter.setBrush(QtGui.QColor(255, 255, 255))
             painter.drawPolygon(QtGui.QPolygonF([tip, back + side, back - side]))
-        if o.get("changed"):
+        if o.get("collision_warning"):
+            warn = QtGui.QPen(QtGui.QColor(255, 140, 0), 2.5, Qt.DashLine)
+            painter.setPen(warn)
+            painter.setBrush(Qt.NoBrush)
+            painter.drawEllipse(QtCore.QPointF(0, 0), r + 4, r + 4)
+        elif o.get("changed"):
             painter.setPen(QtGui.QPen(QtGui.QColor(255, 255, 255), 1.5))
             painter.setBrush(Qt.NoBrush)
             painter.drawEllipse(QtCore.QPointF(0, 0), r + 4, r + 4)
