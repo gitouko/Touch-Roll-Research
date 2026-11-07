@@ -12,7 +12,8 @@ from trcore.stagemodel import floor_below
 
 from . import EDITOR_NAME, __version__
 from .mapview import COLORS, PROJECTIONS, MapView
-from .project import EditorError, Project, verify_saved_rom
+from .project import EditorError, Project, find_original_rom, verify_saved_rom
+from trcore.romwrite import patch_record_path
 
 Qt = QtCore.Qt
 KIND_NAMES = {"start": "Start", "goal": "Goal", "bumper": "Bumper", "banana": "Banana"}
@@ -380,7 +381,28 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         QtWidgets.QApplication.restoreOverrideCursor()
         self.settings.setValue("last_rom_dir", os.path.dirname(os.path.abspath(path)))
+        rec = proj.opened_editor_output
+        if rec:
+            orig = find_original_rom(path, rec)
+            if orig and self.ask(
+                    f"{os.path.basename(path)} is a copy this editor saved from {os.path.basename(orig)}.\n\n"
+                    f"Open {os.path.basename(orig)} and load this copy's edits instead? (Recommended: every save "
+                    "then stays one step from the original, and Save keeps replacing this copy.)"):
+                try:
+                    base = Project(orig)
+                    if rec.get("plan"):
+                        base.import_plan(patch_record_path(path))
+                    base.output_path = os.path.abspath(path)
+                    base.saved_action = base.undo_stack[-1]["id"] if base.undo_stack else None
+                except EditorError as exc:
+                    self.error(f"Could not load the edits onto the original ({exc}); opening the copy as it is.")
+                else:
+                    self.open_project(base, orig)
+                    return
         self.open_project(proj, path)
+
+    def ask(self, question) -> bool:
+        return QtWidgets.QMessageBox.question(self, EDITOR_NAME, question) == QtWidgets.QMessageBox.Yes
 
     def open_project(self, proj: Project, path: str):
         self.project = proj
@@ -391,10 +413,10 @@ class MainWindow(QtWidgets.QMainWindow):
         if proj.opened_editor_output:
             src = (proj.opened_editor_output.get("input_rom") or {}).get("name", "the original ROM")
             self.notice(
-                f"This ROM is a copy the editor saved earlier (made from {src}).\n\n"
-                "You can edit it as it is, but to keep working on the same hack it is better to open "
-                f"{src} and use File > Import edits with {os.path.splitext(os.path.basename(path))[0]}.patch.json, "
-                "then Save over the copy.")
+                f"This ROM is a copy the editor saved earlier (made from {src}). New edits will be added on "
+                "top of it, and saves will record that chain.\n\nTo keep every save one step from the original "
+                f"instead, open {src} and use File > Import edits with "
+                f"{os.path.splitext(os.path.basename(path))[0]}.patch.json, then Save over the copy.")
         first = proj.worlds[0]["stages"][0]["stage_key"] if proj.worlds else None
         if first:
             self.load_stage(first)

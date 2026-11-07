@@ -12,7 +12,8 @@ from trcore.stc.edit import apply_edits
 from tests.synth import IDENTITY, build_stage
 from tests.synth_nsbmd import build_nsbmd
 from tests.synth_rom import build_rom
-from tredit.project import (EditorError, Project, angle_to_degrees, goal_heading, verify_saved_rom)
+from tredit.project import (EditorError, Project, angle_to_degrees, find_original_rom, goal_heading,
+                            verify_saved_rom)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REAL_ROM = os.environ.get("TRCORE_ROM")
@@ -200,11 +201,19 @@ class ProjectBasics(unittest.TestCase):
     def test_opening_an_editor_copy_is_detected(self):
         p = self.p
         p.change("s1", "goal:0", "red", True)
-        out = os.path.join(self.tmp, "copy.nds")
+        sub = os.path.join(self.tmp, "hacks")
+        os.mkdir(sub)
+        out = os.path.join(sub, "copy.nds")
         p.save(out)
         q = open_synth(out)
         self.assertIsNotNone(q.opened_editor_output)
         self.assertIsNone(self.p.opened_editor_output)
+        self.assertEqual(find_original_rom(out, q.opened_editor_output), self.base)   # one folder up
+        q.change("s1", "banana:0", "bunch", True)                                      # stacked edit
+        rec = q.save(os.path.join(self.tmp, "stacked.nds"))
+        chain = rec["base_rom_was_editor_copy"]
+        self.assertEqual(chain["made_from"]["sha1"], self.base_sha1)
+        self.assertEqual(chain["its_plan"]["stages"][0]["edits"][0]["target"], "pool_A[0].u32_30")
 
 
 class Angles(unittest.TestCase):

@@ -93,6 +93,30 @@ class GuiSmoke(unittest.TestCase):
         self.assertEqual(after[2], before[2])
         self.assertEqual(after[1], 2.0)
 
+    def test_opening_a_copy_offers_the_original(self):
+        w = self.w
+        w.select("goal:0")
+        w.props.red.click()
+        out = os.path.join(self.tmp, "copy.nds")
+        w._write(out, replace_own=True)
+        asked = []
+        w.ask = lambda q: asked.append(q) or True
+        orig_project = self.A.Project
+        self.A.Project = lambda path: open_synth(path)
+        try:
+            w.open_rom(out)
+        finally:
+            self.A.Project = orig_project
+        self.assertEqual(len(asked), 1)
+        self.assertEqual(os.path.abspath(w.project.rom_path), os.path.abspath(self.base))
+        self.assertEqual(w.project.output_path, os.path.abspath(out))
+        self.assertTrue(w.objects["goal:0"]["red"])
+        self.assertFalse(w.project.dirty)
+        w.select("banana:0")
+        w.props.bunch.click()
+        w.save()                                 # replaces the copy, built from the original
+        self.assertEqual(self.errors, [])
+
     def test_errors_are_reported_not_raised(self):
         w = self.w
         w.do_change("goal:0", "position", [1e9, 0, 0])

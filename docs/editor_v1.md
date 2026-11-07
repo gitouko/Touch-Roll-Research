@@ -1,5 +1,7 @@
 # Touch & Roll Stage Editor — version 0.1 (Milestone 2)
 
+**Status: accepted in-game on 2026-11-07** (`docs/experiments/editor_acceptance_v0.1/`).
+
 A desktop editor for *Super Monkey Ball: Touch & Roll* (USA) stages, written in Python on top of
 `trcore`. It shows each stage's own model as a top-down map, plus a side view, and lets you move and
 turn the objects whose meaning has been confirmed in-game.
@@ -65,6 +67,9 @@ Milestone 3.
   share, and anyone with the same original ROM can apply it.
 * **Import edits:** loads a plan, or the `.patch.json` of a copy the editor saved. Use it to continue
   working on a hack: open the original ROM, import, then Save over the copy.
+* **Opening a copy the editor saved** offers to do that for you: it finds the original next to the copy
+  (or one folder up), loads the copy's edits onto it, and Save keeps replacing the copy.
+* If you rename a copy, rename its `.patch.json` to the same name (`<name>.patch.json`).
 * **Play saved copy in BizHawk (F5):** starts EmuHawk with the saved copy. It asks for EmuHawk.exe
   once.
 

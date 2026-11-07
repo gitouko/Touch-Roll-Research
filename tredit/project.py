@@ -414,8 +414,14 @@ class Project:
         out_abs = os.path.abspath(out_path)
         if out_abs == self.rom_path or (os.path.exists(out_abs) and os.path.samefile(out_abs, self.rom_path)):
             raise EditorError("that is the ROM you opened; save the edits to a new copy instead")
+        base_info = None
+        if self.opened_editor_output:          # edits are stacked on an earlier editor copy: keep the chain
+            r = self.opened_editor_output
+            base_info = {"base_rom_was_editor_copy": {
+                "name": os.path.basename(self.rom_path), "sha1": self.rom_sha1,
+                "made_from": r.get("input_rom"), "its_plan": r.get("plan")}}
         try:
-            rec = build_edit_rom(self.rom_path, out_abs, self.plan(), replace_own=replace_own)
+            rec = build_edit_rom(self.rom_path, out_abs, self.plan(), replace_own=replace_own, extra=base_info)
         except (EditRefused, RomWriteRefused) as exc:
             raise EditorError(str(exc)) from None
         except PermissionError as exc:
@@ -447,6 +453,38 @@ def verify_saved_rom(out_path: str, project: Project) -> List[str]:
     except (OSError, RomError, lz10.LZ10Error) as exc:
         problems.append(f"could not re-read the saved copy: {exc}")
     return problems
+
+
+def find_original_rom(copy_path: str, record: dict) -> Optional[str]:
+    """Look next to an editor-made copy (and one folder up) for the ROM its record says it was made from."""
+    want = ((record or {}).get("input_rom") or {}).get("sha1")
+    if not want:
+        return None
+    size = os.path.getsize(copy_path)
+    here = os.path.dirname(os.path.abspath(copy_path))
+    seen = set()
+    for folder in (here, os.path.dirname(here)):
+        try:
+            names = sorted(os.listdir(folder))
+        except OSError:
+            continue
+        for n in names:
+            cand = os.path.join(folder, n)
+            if not n.lower().endswith(".nds") or cand in seen or os.path.abspath(cand) == os.path.abspath(copy_path):
+                continue
+            seen.add(cand)
+            try:
+                if os.path.getsize(cand) != size:
+                    continue
+                h = hashlib.sha1()
+                with open(cand, "rb") as fh:
+                    for chunk in iter(lambda: fh.read(1 << 20), b""):
+                        h.update(chunk)
+            except OSError:
+                continue
+            if h.hexdigest() == want:
+                return cand
+    return None
 
 
 def _editor_output_record(rom_path: str, sha1: str) -> Optional[dict]:

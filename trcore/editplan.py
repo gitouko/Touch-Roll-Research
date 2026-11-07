@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from typing import Optional
 
 from . import lz10, romwrite
 from .rom import NdsRom
@@ -35,7 +36,8 @@ def load_plan(path: str) -> dict:
     return plan
 
 
-def build_edit_rom(rom_path: str, out_path: str, plan: dict, replace_own: bool = False) -> dict:
+def build_edit_rom(rom_path: str, out_path: str, plan: dict, replace_own: bool = False,
+                   extra: Optional[dict] = None) -> dict:
     rom = NdsRom.from_file(rom_path)
     sha1 = hashlib.sha1(rom.data).hexdigest()
     if plan.get("base_rom_sha1") and plan["base_rom_sha1"].lower() != sha1:
@@ -64,5 +66,5 @@ def build_edit_rom(rom_path: str, out_path: str, plan: dict, replace_own: bool =
     return romwrite.write_rom_copy_multi(
         rom_path, out_path, replacements, note=plan.get("title"),
         extra={"plan_schema": PLAN_SCHEMA, "stage_edits": stage_records,
-               "status": "generated - not yet verified in-game", "plan": plan},
+               "status": "generated - not yet verified in-game", "plan": plan, **(extra or {})},
         replace_own=replace_own)

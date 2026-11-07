@@ -15,8 +15,8 @@ Decisions by the project owner (2026-11-06), mapped onto the contract's mileston
 * Saving (owner's choice): both modes — "Save" replaces the editor's own previous copy (verified),
   "Save as new copy" always writes a new file.
 
-**Status:** Milestone 2 is built as editor 0.1 (`tredit/`, guide in `docs/editor_v1.md`). It is waiting
-for the owner's acceptance test.
+**Status:** Milestone 2 is built as editor 0.1 (`tredit/`, guide in `docs/editor_v1.md`) and passed the
+owner's in-game acceptance test on 2026-11-07 (`docs/experiments/editor_acceptance_v0.1/`).
 
 ## Views
 * **2D top-down map** from the first version on.
