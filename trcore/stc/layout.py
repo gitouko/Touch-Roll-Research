@@ -13,6 +13,7 @@ See docs/research_notes/stc_format_spec.md for the full write-up.
 """
 from __future__ import annotations
 
+# "in_game": confirmations by controlled in-game edits (Level 4 for the stated meaning only).
 EVIDENCE = {
     "E01": {"level": 2, "claim": "Bytes 'LCTS' at 0x00", "basis": "183/183"},
     "E02": {"level": 2, "claim": "u32 at 0x04 == 0x12 (meaning unknown)", "basis": "183/183"},
@@ -121,3 +122,14 @@ GROUP_TABLES = [
     ("table_8C", 0x8C, 0x34),
 ]
 CELL_ENTRY_SIZE = 8
+
+IN_GAME = {
+    "E05": "start +0x0C = facing angle (0x10000 = 360 deg, increasing turns left; angle 0 faces -z): "
+           "edit test 1, W1-3",
+    "E07": "pool A +0x24 = goal position (model and trigger): edit test 1, W1-4",
+    "E09": "pool C +0x00 = banana position: edit test 1, W1-1",
+    "E12": "pool C +0x0C: 1 = banana bunch worth 5, 0 = single: edit test 1, W1-2",
+}
+for _k, _v in IN_GAME.items():
+    EVIDENCE[_k]["in_game"] = _v
+

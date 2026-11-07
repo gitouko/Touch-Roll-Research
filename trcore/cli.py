@@ -481,6 +481,12 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 2
     try:
         return args.func(args)
+    except BrokenPipeError:            # output piped into e.g. `head`: stop quietly
+        try:
+            sys.stdout = open(os.devnull, "w")
+        except OSError:
+            pass
+        return 0
     except (OSError, R.OutputRefused) as exc:
         _p(f"error: {exc}")
         return 2
