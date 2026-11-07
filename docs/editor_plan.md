@@ -43,17 +43,18 @@ Decisions by the project owner (2026-11-06), mapped onto the contract's mileston
 * For sharing, edits should go out as patches rather than ROMs. The public repository still hosts the
   extracted game files; decide on that before announcing a community release.
 
-## What is left before the editor is complete (2026-11-07)
+## What is left before the editor is complete (updated 2026-11-07 with the owner's additions)
 
-| Step | What it needs | Kind of work |
-|---|---|---|
-| 0.2 acceptance | the owner's in-game test of adding, deleting and free moves made with the editor | testing only |
-| Moving-part objects | confirm delete / far move / add inside moving parts in-game; then allow adding to a chosen part | small test, then a group choice in the editor |
-| **4 — collision editing** | decode the four collision tables (descriptor +0x74…+0x90: records 0x10/0x20/0x34/0x34), the cell lists for bits 0–3 and the +0xAC tree; relate them to the visual model; edit them; rebuild the lists | **largest research step** |
-| **4b — platforms** | write new NITRO model geometry (NSBMD) with a placeholder texture that works with the stage's `.nsbtx`, plus matching collision; possibly new parts (groups) | research + writing a model encoder |
-| **5 — 3D view** | textured 3D rendering (decode `.nsbtx` textures), 3D picking and dragging | mostly engineering |
-| 6 — release | Windows build (single `.exe` via PyInstaller), user guide, patch-based sharing, decision on the public repository's extracted game files | packaging |
+Done: 0.1 (move/turn/flags), 0.2 (add/delete/duplicate/free moves; acceptance passed, including a red goal
+added from scratch and a deletion inside a moving part).
 
-Possible extras, if wanted: moving-part motion preview (`.nsbca` animations), stage-wide values such as
-time limit or background (not located yet), multi-start party stages, a stage overview.
+| # | Step | What it needs | Kind of work |
+|---|---|---|---|
+| 4 + 4b | **Collision editing and platforms** (done together, owner's choice) | decode the four collision tables (descriptor +0x74…+0x90: records 0x10/0x20/0x34/0x34), the cell lists for bits 0–3 and the +0xAC tree, and their link to the visual model; edit them and rebuild the lists; write new NITRO geometry (NSBMD) with a placeholder texture that works with the stage's `.nsbtx`, plus matching collision; possibly new parts (groups) | **largest research step** |
+| 5 | **3D view** | textured 3D rendering (decode `.nsbtx`), 3D picking and dragging | mostly engineering |
+| 6 | **Animation support** (owner's addition) | parse the stages' animations: `.nsbca` node animation (moving parts, 79 stages), `.nsbma` material (5), `.nsbta` texture SRT (17), `.nsbtp` texture pattern (1); play them in the views; a **keyframe editor** for new and existing animations. Edited animations must drive the collision of the same part (moving groups are tied to model nodes by name, spec §15), so model and collision never come apart. | research + engineering |
+| 7 | **World / stage name editing** (owner's addition) | rename worlds and stages in the original ROM's text and write them to the modified ROM (name tables / text resources to locate; length limits per language) | small research + editor page |
+| 8 | Release | single Windows `.exe` (PyInstaller), user guide, patch-based sharing, decision on the public repository's extracted game files | packaging |
 
+Smaller open items: adding objects into a chosen moving part, multi-start party stages, and stage-wide values
+such as the time limit (not located yet).

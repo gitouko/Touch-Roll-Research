@@ -147,6 +147,30 @@ class GuiSmoke(unittest.TestCase):
         w._write(out, replace_own=True)
         self.assertEqual(self.errors, [])
 
+    def test_delete_and_duplicate_work_repeatedly_through_their_actions(self):
+        """0.2.1: the actions must follow the selection, not only the last edit."""
+        w = self.w
+        w.select("banana:0")
+        self.assertTrue(w.a_delete.isEnabled())
+        w.a_delete.trigger()
+        self.assertNotIn("banana:0", w.objects)
+        w.select("banana:1")
+        self.assertTrue(w.a_delete.isEnabled() and w.a_dup.isEnabled())
+        w.a_dup.trigger()
+        first_copy = w.selected
+        w.select("banana:1")
+        w.a_dup.trigger()
+        self.assertNotEqual(w.selected, first_copy)
+        w.select(first_copy)
+        w.a_delete.trigger()
+        self.assertNotIn(first_copy, w.objects)
+        w.select("goal:0")
+        w.a_delete.trigger()
+        self.assertNotIn("goal:0", w.objects)
+        w.select(None)
+        self.assertFalse(w.a_delete.isEnabled())
+        self.assertEqual(self.errors, [])
+
     def test_errors_are_reported_not_raised(self):
         w = self.w
         w.do_change("goal:0", "position", [1e9, 0, 0])

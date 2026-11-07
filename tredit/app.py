@@ -530,6 +530,7 @@ class MainWindow(QtWidgets.QMainWindow):
             msg += " — no model file for this stage; objects only" if not st.model_error else \
                 f" — model could not be read: {st.model_error}"
         self.statusBar().showMessage(msg, 8000)
+        self.update_actions()
 
     @staticmethod
     def _bounds(st):
@@ -588,6 +589,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.top.set_selected(self.selected)
         self.side.set_selected(self.selected)
         self.props.show_object(self.objects.get(self.selected))
+        self.update_actions()               # Delete / Duplicate follow the selection (0.2.1 fix)
 
     def sync(self):
         st = self.project.stage(self.stage_key)

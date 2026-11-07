@@ -1,0 +1,563 @@
+{
+ "schema": "trcore.rom_patch_record/1",
+ "tool": "trcore 0.1.0",
+ "note": "Touch & Roll editor edits",
+ "input_rom": {
+  "name": "0333 - Super Monkey Ball - Touch & Roll (USA) (En,Fr,De,Es,It).nds",
+  "sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17"
+ },
+ "output_rom": {
+  "name": "test 0.2.nds",
+  "sha1": "bb954f4d00a5eb4bb703f58395de86f180abb3d1"
+ },
+ "output_identical_to_input": false,
+ "replaced_previous_output": false,
+ "replacements": [
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_ad02_stc.lz",
+   "file_id": 2463,
+   "placement": "relocated",
+   "old": {
+    "start": "0x4DA000",
+    "end": "0x4ECBEA",
+    "size": 76778,
+    "sha256": "03569f87b5cadb0f7bdf653a226d749e5d48b9ff1cd39374d6e47b64d95dabfa",
+    "decoded_sha256": "5c581011896a2dd9d61af7a3f01cc0a5fa2697892507e01a1373f3b680155c0f",
+    "decoded_size": 261712
+   },
+   "new": {
+    "start": "0x2D21C00",
+    "end": "0x2D359DD",
+    "size": 81373,
+    "sha256": "da885827af2e89d5baf7480d83b5b7af58bb71f09078055e283f75dfb8eea13e",
+    "decoded_sha256": "972765ebebb8f31c3c1a3f65539468b57f4636121e943915a718acc570c6990e",
+    "decoded_size": 271276
+   },
+   "header_changes": [
+    {
+     "field": "used_rom_size",
+     "offset": "0x80",
+     "old": "0x2D21B38",
+     "new": "0x2D359DD"
+    },
+    {
+     "field": "header_crc16",
+     "offset": "0x15E",
+     "old": "0x030E",
+     "new": "0x60EA"
+    }
+   ]
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_ad21_stc.lz",
+   "file_id": 2478,
+   "placement": "in_place",
+   "old": {
+    "start": "0x77A200",
+    "end": "0x78430B",
+    "size": 41227,
+    "sha256": "5bf389e9d52e34344da3a206be379c416715c433417de68416598c54e25a51f5",
+    "decoded_sha256": "d10b29038cbaa200d17b60d2c204f63cd6a0d1af7388c669ce32140cc3655f5b",
+    "decoded_size": 157792
+   },
+   "new": {
+    "start": "0x77A200",
+    "end": "0x7843C8",
+    "size": 41416,
+    "sha256": "966622b6f7c1def2caa779583d6bcef946f3eac7a8e169e260705eceda1d9b07",
+    "decoded_sha256": "deaf47093c439f13b23c6ab94eb32d44068b8285e9856aa758b447ae297c2e1e",
+    "decoded_size": 159152
+   },
+   "header_changes": []
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_be01_stc.lz",
+   "file_id": 2488,
+   "placement": "relocated",
+   "old": {
+    "start": "0x113F000",
+    "end": "0x1144BC1",
+    "size": 23489,
+    "sha256": "3b9a8bc71e7d69e503305536e890e727c7c7fa916f055a97f1cd88249b8caf4a",
+    "decoded_sha256": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+    "decoded_size": 85296
+   },
+   "new": {
+    "start": "0x2D35C00",
+    "end": "0x2D3BEDC",
+    "size": 25308,
+    "sha256": "475d5f88a90600cc960aa3d90ba98aaec540f00cda91e4e95ad325f794f990b7",
+    "decoded_sha256": "9c0359941a30e890e8c8dbab166b8693bcf2b1dabf0966c1c12af5b258e53fee",
+    "decoded_size": 89192
+   },
+   "header_changes": [
+    {
+     "field": "used_rom_size",
+     "offset": "0x80",
+     "old": "0x2D359DD",
+     "new": "0x2D3BEDC"
+    },
+    {
+     "field": "header_crc16",
+     "offset": "0x15E",
+     "old": "0x60EA",
+     "new": "0xBF70"
+    }
+   ]
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smbds_023_stc.lz",
+   "file_id": 2603,
+   "placement": "relocated",
+   "old": {
+    "start": "0x3B9C00",
+    "end": "0x3C9344",
+    "size": 63300,
+    "sha256": "d36d87942e96d6a71a01449f4eb6d78fb503f0e6c62d9e2487f49fb4771efd6a",
+    "decoded_sha256": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+    "decoded_size": 184992
+   },
+   "new": {
+    "start": "0x2D3C000",
+    "end": "0x2D4BB2D",
+    "size": 64301,
+    "sha256": "d17867071fdfd4d759b13461b30c285a1586754f3f0844128a00c04b7fe96f54",
+    "decoded_sha256": "31b4f7028c2da67948352f8c464ad289c3530d5edced5df0ba6cb3970952980e",
+    "decoded_size": 186796
+   },
+   "header_changes": [
+    {
+     "field": "used_rom_size",
+     "offset": "0x80",
+     "old": "0x2D3BEDC",
+     "new": "0x2D4BB2D"
+    },
+    {
+     "field": "header_crc16",
+     "offset": "0x15E",
+     "old": "0xBF70",
+     "new": "0x1073"
+    }
+   ]
+  }
+ ],
+ "plan_schema": "trcore.edit_plan/2",
+ "stage_edits": [
+  {
+   "file": "stcoli/smb1_ad02_stc.lz",
+   "stage_key": "smb1_ad02",
+   "where": "World 5-2 Sword",
+   "decoded_size": 261712,
+   "decoded_size_after": 271276,
+   "decoded_sha256_before": "5c581011896a2dd9d61af7a3f01cc0a5fa2697892507e01a1373f3b680155c0f",
+   "decoded_sha256_after": "972765ebebb8f31c3c1a3f65539468b57f4636121e943915a718acc570c6990e",
+   "edits": [],
+   "objects": {
+    "ops": [
+     {
+      "op": "remove",
+      "kind": "bumper",
+      "index": 3,
+      "expect_position": [
+       -5.0,
+       0.0,
+       -30.0
+      ]
+     },
+     {
+      "op": "remove",
+      "kind": "bumper",
+      "index": 5,
+      "expect_position": [
+       5.0,
+       0.0,
+       -30.0
+      ]
+     },
+     {
+      "op": "add",
+      "kind": "bumper",
+      "group": 0,
+      "position": [
+       -3.75,
+       0.0,
+       26.0
+      ]
+     },
+     {
+      "op": "add",
+      "kind": "bumper",
+      "group": 0,
+      "position": [
+       4.0,
+       0.0,
+       26.0
+      ]
+     },
+     {
+      "op": "add",
+      "kind": "banana",
+      "group": 0,
+      "position": [
+       -5.550048828125,
+       0.25,
+       -29.949951171875
+      ],
+      "bunch": false
+     }
+    ],
+    "pools": {
+     "banana": {
+      "records": 7,
+      "offset": "0x3FE50",
+      "size": 112
+     },
+     "bumper": {
+      "records": 9,
+      "offset": "0x3FEC0",
+      "size": 432
+     }
+    },
+    "cells": {
+     "banana group 0": {
+      "objects": 7,
+      "cells_rewritten": 90
+     },
+     "bumper group 0": {
+      "objects": 9,
+      "cells_rewritten": 376
+     }
+    },
+    "decoded_size_before": 261712,
+    "decoded_size_after": 271276,
+    "decoded_sha256_before": "5c581011896a2dd9d61af7a3f01cc0a5fa2697892507e01a1373f3b680155c0f",
+    "decoded_sha256_after": "972765ebebb8f31c3c1a3f65539468b57f4636121e943915a718acc570c6990e",
+    "banana_value": 11
+   }
+  },
+  {
+   "file": "stcoli/smb1_ad21_stc.lz",
+   "stage_key": "smb1_ad21",
+   "where": "World 5-6 Conveyor",
+   "decoded_size": 157792,
+   "decoded_size_after": 159152,
+   "decoded_sha256_before": "d10b29038cbaa200d17b60d2c204f63cd6a0d1af7388c669ce32140cc3655f5b",
+   "decoded_sha256_after": "deaf47093c439f13b23c6ab94eb32d44068b8285e9856aa758b447ae297c2e1e",
+   "edits": [],
+   "objects": {
+    "ops": [
+     {
+      "op": "remove",
+      "kind": "bumper",
+      "index": 14,
+      "expect_position": [
+       -32.0,
+       -0.10009765625,
+       0.0
+      ]
+     }
+    ],
+    "pools": {
+     "bumper": {
+      "records": 19,
+      "offset": "0x26860",
+      "size": 912
+     }
+    },
+    "cells": {
+     "bumper group 15": {
+      "objects": 0,
+      "cells_rewritten": 28
+     }
+    },
+    "decoded_size_before": 157792,
+    "decoded_size_after": 159152,
+    "decoded_sha256_before": "d10b29038cbaa200d17b60d2c204f63cd6a0d1af7388c669ce32140cc3655f5b",
+    "decoded_sha256_after": "deaf47093c439f13b23c6ab94eb32d44068b8285e9856aa758b447ae297c2e1e",
+    "banana_value": 23
+   }
+  },
+  {
+   "file": "stcoli/smb1_be01_stc.lz",
+   "stage_key": "smb1_be01",
+   "where": "World 1-1 Elementary",
+   "decoded_size": 85296,
+   "decoded_size_after": 89192,
+   "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+   "decoded_sha256_after": "9c0359941a30e890e8c8dbab166b8693bcf2b1dabf0966c1c12af5b258e53fee",
+   "edits": [],
+   "objects": {
+    "ops": [
+     {
+      "op": "remove",
+      "kind": "banana",
+      "index": 0,
+      "expect_position": [
+       -1.550048828125,
+       0.5,
+       0.0
+      ]
+     },
+     {
+      "op": "move",
+      "kind": "banana",
+      "index": 2,
+      "from": [
+       8.449951171875,
+       0.5,
+       0.0
+      ],
+      "to": [
+       -5.0,
+       0.5,
+       0.0
+      ]
+     },
+     {
+      "op": "add",
+      "kind": "banana",
+      "group": 0,
+      "position": [
+       -2.25,
+       0.5,
+       2.25
+      ],
+      "bunch": true
+     }
+    ],
+    "pools": {
+     "banana": {
+      "records": 5,
+      "offset": "0x14D30",
+      "size": 80
+     }
+    },
+    "cells": {
+     "banana group 0": {
+      "objects": 5,
+      "cells_rewritten": 176
+     }
+    },
+    "decoded_size_before": 85296,
+    "decoded_size_after": 89192,
+    "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+    "decoded_sha256_after": "9c0359941a30e890e8c8dbab166b8693bcf2b1dabf0966c1c12af5b258e53fee",
+    "banana_value": 9
+   }
+  },
+  {
+   "file": "stcoli/smbds_023_stc.lz",
+   "stage_key": "smbds_023",
+   "where": "World 1-2 Sine Wave",
+   "decoded_size": 184992,
+   "decoded_size_after": 186796,
+   "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+   "decoded_sha256_after": "31b4f7028c2da67948352f8c464ad289c3530d5edced5df0ba6cb3970952980e",
+   "edits": [],
+   "objects": {
+    "ops": [
+     {
+      "op": "add",
+      "kind": "goal",
+      "group": 0,
+      "position": [
+       0.0,
+       0.0,
+       31.25
+      ],
+      "red": true,
+      "matrix": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ]
+     }
+    ],
+    "pools": {
+     "goal": {
+      "records": 2,
+      "offset": "0x2D2A0",
+      "size": 104
+     }
+    },
+    "cells": {
+     "goal group 0": {
+      "objects": 2,
+      "cells_rewritten": 80
+     }
+    },
+    "decoded_size_before": 184992,
+    "decoded_size_after": 186796,
+    "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+    "decoded_sha256_after": "31b4f7028c2da67948352f8c464ad289c3530d5edced5df0ba6cb3970952980e",
+    "banana_value": 12
+   }
+  }
+ ],
+ "status": "generated - not yet verified in-game",
+ "plan": {
+  "schema": "trcore.edit_plan/2",
+  "title": "Touch & Roll editor edits",
+  "base_rom_sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17",
+  "stages": [
+   {
+    "stage_key": "smb1_ad02",
+    "file": "stcoli/smb1_ad02_stc.lz",
+    "where": "World 5-2 Sword",
+    "objects": [
+     {
+      "op": "remove",
+      "kind": "bumper",
+      "index": 3,
+      "expect_position": [
+       -5.0,
+       0.0,
+       -30.0
+      ]
+     },
+     {
+      "op": "remove",
+      "kind": "bumper",
+      "index": 5,
+      "expect_position": [
+       5.0,
+       0.0,
+       -30.0
+      ]
+     },
+     {
+      "op": "add",
+      "kind": "bumper",
+      "group": 0,
+      "position": [
+       -3.75,
+       0.0,
+       26.0
+      ]
+     },
+     {
+      "op": "add",
+      "kind": "bumper",
+      "group": 0,
+      "position": [
+       4.0,
+       0.0,
+       26.0
+      ]
+     },
+     {
+      "op": "add",
+      "kind": "banana",
+      "group": 0,
+      "position": [
+       -5.550048828125,
+       0.25,
+       -29.949951171875
+      ],
+      "bunch": false
+     }
+    ]
+   },
+   {
+    "stage_key": "smb1_ad21",
+    "file": "stcoli/smb1_ad21_stc.lz",
+    "where": "World 5-6 Conveyor",
+    "objects": [
+     {
+      "op": "remove",
+      "kind": "bumper",
+      "index": 14,
+      "expect_position": [
+       -32.0,
+       -0.10009765625,
+       0.0
+      ]
+     }
+    ]
+   },
+   {
+    "stage_key": "smb1_be01",
+    "file": "stcoli/smb1_be01_stc.lz",
+    "where": "World 1-1 Elementary",
+    "objects": [
+     {
+      "op": "remove",
+      "kind": "banana",
+      "index": 0,
+      "expect_position": [
+       -1.550048828125,
+       0.5,
+       0.0
+      ]
+     },
+     {
+      "op": "move",
+      "kind": "banana",
+      "index": 2,
+      "from": [
+       8.449951171875,
+       0.5,
+       0.0
+      ],
+      "to": [
+       -5.0,
+       0.5,
+       0.0
+      ]
+     },
+     {
+      "op": "add",
+      "kind": "banana",
+      "group": 0,
+      "position": [
+       -2.25,
+       0.5,
+       2.25
+      ],
+      "bunch": true
+     }
+    ]
+   },
+   {
+    "stage_key": "smbds_023",
+    "file": "stcoli/smbds_023_stc.lz",
+    "where": "World 1-2 Sine Wave",
+    "objects": [
+     {
+      "op": "add",
+      "kind": "goal",
+      "group": 0,
+      "position": [
+       0.0,
+       0.0,
+       31.25
+      ],
+      "red": true,
+      "matrix": [
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0,
+       0.0,
+       0.0,
+       0.0,
+       1.0
+      ]
+     }
+    ]
+   }
+  ],
+  "made_with": "tredit"
+ }
+}
