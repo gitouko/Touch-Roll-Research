@@ -147,7 +147,7 @@ def write_rom_copy(input_path: str, output_path: str, nitro_path: str, new_data:
 
 
 def write_rom_copy_multi(input_path: str, output_path: str, replacements, record_path: Optional[str] = None,
-                         note: Optional[str] = None) -> dict:
+                         note: Optional[str] = None, extra: Optional[dict] = None) -> dict:
     """replacements: [(nitro_path, new_bytes, force_relocate), ...] applied in order to a copy."""
     in_abs, out_abs = os.path.abspath(input_path), os.path.abspath(output_path)
     if in_abs == out_abs:
@@ -187,6 +187,8 @@ def write_rom_copy_multi(input_path: str, output_path: str, replacements, record
         "output_identical_to_input": written == rom.data,
         "replacements": steps,
     }
+    if extra:
+        record.update(extra)
     rp = record_path or (os.path.splitext(out_abs)[0] + ".patch.json")
     with open(rp, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(record, fh, indent=1)

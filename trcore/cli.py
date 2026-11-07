@@ -359,6 +359,27 @@ def cmd_make_gate(args) -> int:
     return 0
 
 
+def cmd_stage_edit(args) -> int:
+    from . import editplan
+    from .stc.edit import EditRefused
+    from .romwrite import RomWriteRefused
+    try:
+        plan = editplan.load_plan(args.plan)
+        rec = editplan.build_edit_rom(args.rom, args.out, plan)
+    except (EditRefused, RomWriteRefused, ValueError) as exc:
+        _p(f"refused: {exc}")
+        return 1
+    for st in rec["stage_edits"]:
+        _p(f"{st['where'] or st['file']}:")
+        for e in st["edits"]:
+            _p(f"  {e['target']} @{e['offset']}: {e['old_value']} -> {e['new_value']}")
+    for r in rec["replacements"]:
+        _p(f"  {r['file']}: {r['placement']}, {r['old']['size']} -> {r['new']['size']} bytes")
+    _p(f"wrote {args.out}  sha1 {rec['output_rom']['sha1']}")
+    _p(f"patch record: {rec['record_path']}")
+    return 0
+
+
 def cmd_ramdump_compare(args) -> int:
     from . import ramdump
     rom = _load_rom(args.rom)
@@ -434,6 +455,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("rom")
     p.add_argument("out")
     p.set_defaults(func=cmd_make_gate)
+    p = sub.add_parser("stage-edit", help="apply an edit plan (JSON) and write a NEW ROM copy")
+    p.add_argument("rom", help="input ROM (never modified)")
+    p.add_argument("out", help="new output .nds path (must not exist)")
+    p.add_argument("plan", help="edit plan JSON (see trcore/editplan.py)")
+    p.set_defaults(func=cmd_stage_edit)
     p = sub.add_parser("ramdump-compare", help="compare a BizHawk Main RAM dump with the expected stage file")
     p.add_argument("dump")
     p.add_argument("--rom", required=True, help="the ROM that was running when the dump was taken")

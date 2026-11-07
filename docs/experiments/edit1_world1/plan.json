@@ -1,0 +1,71 @@
+{
+ "schema": "trcore.edit_plan/1",
+ "title": "Edit test 1 (World 1): one small, visible change in each of stages 1-4",
+ "base_rom_sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17",
+ "stages": [
+  {
+   "stage_key": "smb1_be01",
+   "where": "World 1-1 Elementary",
+   "edits": [
+    {
+     "target": "pool_C[1].position",
+     "from": [
+      3.449951171875,
+      0.5,
+      0.0
+     ],
+     "to": [
+      3.449951171875,
+      0.5,
+      2.0
+     ],
+     "prediction": "The 2nd banana on the path (the one between the 1st banana and the goal) is no longer on the straight line: it sits 2.0 units to one side, toward one of the two bananas beside the goal. Everything else unchanged. Note which side (left/right seen from the start)."
+    }
+   ]
+  },
+  {
+   "stage_key": "smbds_023",
+   "where": "World 1-2 Sine Wave",
+   "edits": [
+    {
+     "target": "pool_C[0].u32_0C",
+     "from": 0,
+     "to": 1,
+     "prediction": "The first banana ahead of the start is a banana BUNCH; collecting it adds 5 bananas."
+    }
+   ]
+  },
+  {
+   "stage_key": "smb1_be06",
+   "where": "World 1-3 Curvature",
+   "edits": [
+    {
+     "target": "start[0].u32_0C",
+     "from": 0,
+     "to": 16384,
+     "prediction": "At the start the ball/camera faces 90 degrees to one side compared with the original; the start position is the same. Note which side (left/right)."
+    }
+   ]
+  },
+  {
+   "stage_key": "smbds_015",
+   "where": "World 1-4 Progenitor",
+   "edits": [
+    {
+     "target": "pool_A[0].translation",
+     "from": [
+      -16.834228515625,
+      0.0,
+      -158.89404296875
+     ],
+     "to": [
+      -16.834228515625,
+      2.0,
+      -158.89404296875
+     ],
+     "prediction": "The goal at the end floats about 2 units above its platform (same spot, just higher). Try to finish and note whether and how it counts."
+    }
+   ]
+  }
+ ]
+}

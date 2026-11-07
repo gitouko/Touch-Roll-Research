@@ -183,6 +183,8 @@ which files were swapped, and what was seen (screenshot if possible).
   exactly, and the in-game gate (a moved file in World 1-1, a different compression in World 1-2)
   produced in-memory stage data identical to the original ROM's and no visible difference
   (docs/research_notes/gate_2026-11-06/).
+* **Edit test 1 (pending):** first controlled byte edits — banana position, banana bunch flag,
+  start angle, goal position — in World 1-1 to 1-4 (docs/experiments/edit1_world1/).
 * **Q6 — Collision tables:** decode `smb1_be01` (one group, simple geometry) against its model.
 * **Q7 — Meaning of 0x0C, 0x10, 0x34, `box2`, descriptor +0x58…+0x70.**
 
