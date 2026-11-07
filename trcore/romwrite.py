@@ -24,6 +24,7 @@ import hashlib
 import json
 import os
 import struct
+import tempfile
 from typing import Optional
 
 from . import TOOL_NAME, __version__, lz10
@@ -146,21 +147,56 @@ def write_rom_copy(input_path: str, output_path: str, nitro_path: str, new_data:
     return write_rom_copy_multi(input_path, output_path, [(nitro_path, new_data, force_relocate)], record_path)
 
 
+def patch_record_path(rom_path: str) -> str:
+    return os.path.splitext(os.path.abspath(rom_path))[0] + ".patch.json"
+
+
+def check_own_output(output_path: str, input_sha1: str) -> dict:
+    """Return the patch record if output_path is a ROM copy this tool wrote from the ROM with input_sha1
+    and it is unchanged since; raise RomWriteRefused otherwise."""
+    rp = patch_record_path(output_path)
+    try:
+        with open(rp, "r", encoding="utf-8") as fh:
+            rec = json.load(fh)
+    except (OSError, ValueError):
+        raise RomWriteRefused(f"{os.path.basename(output_path)} exists and has no readable patch record "
+                              f"({os.path.basename(rp)}); it was not written by this tool, choose a new name")
+    if not isinstance(rec, dict) or rec.get("schema") != "trcore.rom_patch_record/1":
+        raise RomWriteRefused(f"{os.path.basename(rp)} is not a trcore patch record; choose a new name")
+    with open(output_path, "rb") as fh:
+        current = hashlib.sha1(fh.read()).hexdigest()
+    if current == input_sha1:
+        raise RomWriteRefused("that file is identical to the original ROM; refusing to replace it")
+    if (rec.get("output_rom") or {}).get("sha1") != current:
+        raise RomWriteRefused(f"{os.path.basename(output_path)} changed since this tool wrote it; choose a new name")
+    if (rec.get("input_rom") or {}).get("sha1") != input_sha1:
+        raise RomWriteRefused(f"{os.path.basename(output_path)} was made from a different ROM; choose a new name")
+    return rec
+
+
 def write_rom_copy_multi(input_path: str, output_path: str, replacements, record_path: Optional[str] = None,
-                         note: Optional[str] = None, extra: Optional[dict] = None) -> dict:
-    """replacements: [(nitro_path, new_bytes, force_relocate), ...] applied in order to a copy."""
+                         note: Optional[str] = None, extra: Optional[dict] = None,
+                         replace_own: bool = False) -> dict:
+    """replacements: [(nitro_path, new_bytes, force_relocate), ...] applied in order to a copy.
+
+    replace_own=True allows replacing an existing output only if check_own_output() accepts it
+    (a copy this tool wrote from the same input ROM, unchanged since). The input ROM is never replaced."""
     in_abs, out_abs = os.path.abspath(input_path), os.path.abspath(output_path)
     if in_abs == out_abs:
         raise RomWriteRefused("output path is the input ROM; refusing to overwrite the original")
-    if os.path.exists(out_abs):
-        if os.path.samefile(in_abs, out_abs):
-            raise RomWriteRefused("output path is the input ROM; refusing to overwrite the original")
-        raise RomWriteRefused(f"output {output_path} already exists; choose a new name")
     if not out_abs.lower().endswith(".nds"):
         raise RomWriteRefused("output name must end in .nds")
     if not replacements:
         raise RomWriteRefused("nothing to replace")
     rom = NdsRom.from_file(in_abs)
+    replaced = False
+    if os.path.exists(out_abs):
+        if os.path.samefile(in_abs, out_abs):
+            raise RomWriteRefused("output path is the input ROM; refusing to overwrite the original")
+        if not replace_own:
+            raise RomWriteRefused(f"output {output_path} already exists; choose a new name")
+        check_own_output(out_abs, hashlib.sha1(rom.data).hexdigest())
+        replaced = True
     cur = rom
     steps = []
     targets = {}
@@ -170,10 +206,18 @@ def write_rom_copy_multi(input_path: str, output_path: str, replacements, record
         targets[rec["file_id"]] = bytes(new_data)
         cur = NdsRom(new_bytes, "step")
     verify(rom, new_bytes, targets)          # final check against the untouched original
-    tmp = out_abs + ".partial"
-    with open(tmp, "xb") as fh:
-        fh.write(new_bytes)
-    os.replace(tmp, out_abs)
+    fd, tmp = tempfile.mkstemp(prefix=os.path.basename(out_abs) + ".", suffix=".partial",
+                               dir=os.path.dirname(out_abs))
+    try:
+        with os.fdopen(fd, "wb") as fh:
+            fh.write(new_bytes)
+        if not replaced and os.path.exists(out_abs):
+            raise RomWriteRefused(f"output {output_path} appeared while writing; choose a new name")
+        os.replace(tmp, out_abs)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.remove(tmp)                   # our own temporary file
+        raise
     with open(out_abs, "rb") as fh:
         written = fh.read()
     if written != new_bytes:
@@ -185,11 +229,12 @@ def write_rom_copy_multi(input_path: str, output_path: str, replacements, record
         "input_rom": {"name": os.path.basename(in_abs), "sha1": hashlib.sha1(rom.data).hexdigest()},
         "output_rom": {"name": os.path.basename(out_abs), "sha1": hashlib.sha1(written).hexdigest()},
         "output_identical_to_input": written == rom.data,
+        "replaced_previous_output": replaced,
         "replacements": steps,
     }
     if extra:
         record.update(extra)
-    rp = record_path or (os.path.splitext(out_abs)[0] + ".patch.json")
+    rp = record_path or patch_record_path(out_abs)
     with open(rp, "w", encoding="utf-8", newline="\n") as fh:
         json.dump(record, fh, indent=1)
         fh.write("\n")

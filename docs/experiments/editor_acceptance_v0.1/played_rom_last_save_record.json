@@ -1,0 +1,104 @@
+{
+ "schema": "trcore.rom_patch_record/1",
+ "tool": "trcore 0.1.0",
+ "note": "Touch & Roll editor edits",
+ "input_rom": {
+  "name": "TR editor test.nds",
+  "sha1": "e9e27f0cd71aedf6657fb3f9ec4902327fb42a21"
+ },
+ "output_rom": {
+  "name": "My Touch & Roll hack.nds",
+  "sha1": "4eb282dd54018841be6322fe45227a4818216db3"
+ },
+ "output_identical_to_input": false,
+ "replaced_previous_output": false,
+ "replacements": [
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_ad02_stc.lz",
+   "file_id": 2463,
+   "placement": "in_place",
+   "old": {
+    "start": "0x4DA000",
+    "end": "0x4ECBE9",
+    "size": 76777,
+    "sha256": "26b3351ec654a193fe68b62ac4d3f0ec3dac1ec0b2b197c3480337e630e16939",
+    "decoded_sha256": "7e5aaeacc77a5c2d30d63de811751e47478e3de64072b6d095ca5c744d670c53",
+    "decoded_size": 261712
+   },
+   "new": {
+    "start": "0x4DA000",
+    "end": "0x4ECBEA",
+    "size": 76778,
+    "sha256": "6299ce0f12671568b17c643c9ed0cb9063f13635b5206b3b64ff7ac060be1e1e",
+    "decoded_sha256": "75da24e3bda664d018142d85fbf7add7286b442cf8c65bcbe5c4025dc3e9e047",
+    "decoded_size": 261712
+   },
+   "header_changes": []
+  }
+ ],
+ "plan_schema": "trcore.edit_plan/1",
+ "stage_edits": [
+  {
+   "file": "stcoli/smb1_ad02_stc.lz",
+   "stage_key": "smb1_ad02",
+   "where": "World 5-2 Sword",
+   "decoded_size": 261712,
+   "decoded_sha256_before": "7e5aaeacc77a5c2d30d63de811751e47478e3de64072b6d095ca5c744d670c53",
+   "decoded_sha256_after": "75da24e3bda664d018142d85fbf7add7286b442cf8c65bcbe5c4025dc3e9e047",
+   "edits": [
+    {
+     "target": "pool_B[0].translation",
+     "field_type": "q12",
+     "offset": "0x164",
+     "width": 12,
+     "old_raw": "00 28 00 00 00 00 00 00 00 70 fe ff",
+     "new_raw": "00 10 00 00 00 00 00 00 00 70 fe ff",
+     "old_value": [
+      2.5,
+      0.0,
+      -25.0
+     ],
+     "new_value": [
+      1.0,
+      0.0,
+      -25.0
+     ],
+     "unchanged": false,
+     "prediction": null,
+     "decoded_sha256_before": "7e5aaeacc77a5c2d30d63de811751e47478e3de64072b6d095ca5c744d670c53",
+     "decoded_sha256_after": "75da24e3bda664d018142d85fbf7add7286b442cf8c65bcbe5c4025dc3e9e047"
+    }
+   ]
+  }
+ ],
+ "status": "generated - not yet verified in-game",
+ "plan": {
+  "schema": "trcore.edit_plan/1",
+  "title": "Touch & Roll editor edits",
+  "base_rom_sha1": "e9e27f0cd71aedf6657fb3f9ec4902327fb42a21",
+  "stages": [
+   {
+    "stage_key": "smb1_ad02",
+    "file": "stcoli/smb1_ad02_stc.lz",
+    "where": "World 5-2 Sword",
+    "edits": [
+     {
+      "target": "pool_B[0].translation",
+      "from": [
+       2.5,
+       0.0,
+       -25.0
+      ],
+      "to": [
+       1.0,
+       0.0,
+       -25.0
+      ]
+     }
+    ]
+   }
+  ],
+  "made_with": "tredit"
+ }
+}
