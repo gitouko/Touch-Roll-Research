@@ -444,6 +444,26 @@ def cmd_stage_edit(args) -> int:
                 _p(f"    {k}: {v['objects']} object(s), {v['cells_rewritten']} cell list(s) rewritten")
             _p(f"    decoded size {st['decoded_size']} -> {st['decoded_size_after']}, "
                f"banana value {st['objects']['banana_value']}")
+        if st.get("collision"):
+            for op in st["collision"]["ops"]:
+                counts = ", ".join(f"{k} {v}" for k, v in op.items()
+                                   if isinstance(v, int) and k != "group" and v)
+                _p(f"  collision {op['op']} (group {op['group']}){': ' + op['label'] if op.get('label') else ''}")
+                _p(f"    {counts}")
+            for g, gr in st["collision"]["groups"].items():
+                tabs = ", ".join(f"{k} {v['kept']}+{v['new']}" for k, v in gr["tables"].items())
+                grid = gr["grid"]
+                _p(f"    group {g}: tables (kept+new) {tabs}; grid {grid['before'][0]}x{grid['before'][1]}"
+                   + (f" -> {grid['after'][0]}x{grid['after'][1]}" if grid["grown"] else "")
+                   + f"; {gr['cells_rewritten']} cell(s) rewritten")
+            _p(f"    decoded size {st['decoded_size']} -> {st['decoded_size_after']}")
+        if st.get("model"):
+            for op in st["model"]["ops"]:
+                _p(f"  model: {op['polygons_added']} polygon(s) added to shape {op['shape']} "
+                   f"(read back within {op['readback_max_error']:.4f})")
+                for sub in op.get("ops", []):
+                    _p(f"    {sub['polygons']} x {sub.get('label') or ''}")
+            _p(f"    {st['model']['file']}: {st['model']['size_before']} -> {st['model']['size_after']} bytes")
     for r in rec["replacements"]:
         _p(f"  {r['file']}: {r['placement']}, {r['old']['size']} -> {r['new']['size']} bytes")
     _p(f"wrote {args.out}  sha1 {rec['output_rom']['sha1']}")
@@ -455,7 +475,8 @@ def cmd_ramdump_compare(args) -> int:
     from . import ramdump
     rom = _load_rom(args.rom)
     with open(args.dump, "rb") as fh:
-        a = ramdump.analyze_dump(fh.read(), rom)
+        dump_bytes = fh.read()
+    a = ramdump.analyze_dump(dump_bytes, rom)
     _p(f"stage {a['stage_id_loaded']} ({a['stage_key']}) at {a['stage_data_ptr']}, {a['expected_size']} bytes")
     w = a["words"]
     _p(f"words: {w['equal']} equal, {w['relocated']} offset->pointer, {w['other']} other (of {w['total']}); "
@@ -465,6 +486,14 @@ def cmd_ramdump_compare(args) -> int:
     for d in a["other_diffs"][:25]:
         _p(f"  other: {d['offset']} {d['field']}: file {d['file']} ram {d['ram']}")
     result = {k: v for k, v in a.items() if not k.startswith("_")}
+    model = ramdump.analyze_model(dump_bytes, rom, a["stage_key"])
+    result["model"] = model
+    if model.get("found"):
+        _p(f"model at {model['address']}: {model['words_different']} of {model['words_total']} words differ "
+           f"({model['different_in_material_block']} in the material block, {model['different_elsewhere']} elsewhere); "
+           f"display lists equal: {model['display_lists_equal']}")
+    else:
+        _p(f"model: not found ({model.get('reason')})")
     code = 0
     if args.against:
         with open(args.against, "rb") as fh:

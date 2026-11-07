@@ -19,8 +19,10 @@ Decisions by the project owner (2026-11-06), mapped onto the contract's mileston
 * Milestone 2 (editor 0.1) passed the owner's in-game acceptance test
   (`docs/experiments/editor_acceptance_v0.1/`).
 * Milestone 3 research and edit test 3 passed (`docs/experiments/edit3_add_remove/`).
-* Editor 0.2 adds, deletes, duplicates and freely moves goals, bumpers and bananas. It is waiting for its
-  acceptance test (`docs/editor_v1.md`).
+* Editor 0.2 adds, deletes, duplicates and freely moves goals, bumpers and bananas; its acceptance test
+  passed (0.2.1 fixes repeated Delete/Duplicate).
+* Milestone 4/4b: collision decoded (spec §17); collision editing and model polygons implemented in trcore;
+  **edit test 4** built and waiting for the in-game test (`docs/experiments/edit4_collision/`).
 
 ## Views
 * **2D top-down map** from the first version on.

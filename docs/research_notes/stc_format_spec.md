@@ -339,6 +339,18 @@ Used by the editor's 2D map. Reproduce every number below with
   W5-6 (edit test 2) confirmed in-game that such objects move with their part.
 * **Not decoded:** materials and textures (names only), animations (`.nsbca`, `.nsbta`, …). The 2D map
   shows moving parts at their rest pose.
+* **The game keeps the model file as loaded (Level 4, memory):** in the edit-test-3 dumps of 1-1 and 1-2
+  the whole decoded model sits in Main RAM (at 0x0224D1E0 in both); only words in the **material block**
+  differ (6 and 10 words: the texture binding). Display lists and everything else are byte-identical.
+  `ramdump-compare` now reports this check for the stage's model.
+* **Adding polygons (Level 2, edit test 4 pending):** `trcore/nitro/nsbmd_write.py` appends polygons to
+  an existing shape. It copies that shape's display list to the end of the model with new GX commands
+  after it (BEGIN_VTXS, NORMAL, TEXCOORD, VTX_16, END_VTXS), so the polygons use the shape's material and
+  the stage's own `.nsbtx` texture; dictionaries and SBC are untouched. It updates the shape's display-list
+  offset/size, the model size (and `ofsEvpMtx` when it pointed at the end), the MDL0 and file sizes, the
+  model's counters and its bounding box. Texture coordinates continue the shape's own mapping (affine map
+  of the nearest upward-facing polygon; shifted by whole 1024-texel periods). Stage materials draw **front
+  faces only**, so a panel meant to be seen from below needs a second, reversed polygon.
 
 ## 16. How the game uses object pools and the collision cells (Milestone 3 research)
 
@@ -453,4 +465,37 @@ From the game's ball-collision code (ARM9, USA rev 0), checked against all 120 m
 these rules, and existing collision can be kept exactly for untouched geometry. A platform is model
 polygons plus the collision generated from them, added to one group's tables and lists. The proposed
 in-game test is in `docs/research_notes/m4_collision_platforms.md`.
+
+### 17.3 Editing collision (Level 2; edit test 4 builds on it, in-game result pending)
+
+Found while building edit test 4 (ARM9, USA rev 0):
+
+* **Nothing outside the grid can be touched.** The position-to-cell lookup 0x02044CD4 computes
+  `floor((x − origin) / size)` for x and z and returns **no cell** when either index is outside
+  `0…nx−1` / `0…nz−1`. The grids end about 0.5 past the stage's collision, so new geometry beyond the
+  stage needs a larger grid.
+* **Only two routines read the grid's size and origin** (descriptor `+0x40…+0x50`): the loader 0x02046CC4
+  (it walks `nx·nz` cell entries, using `smulbb`) and the lookup. Growing the grid by whole cells, with a
+  new cell table and the old cells' entries kept, is therefore consistent with the code.
+* For bits 0–3 the lookup reads the cell's array directly (`array[bit]`), so **every cell needs an array**.
+  In all 470,676 main-game cells the array offset is non-zero and **no two cells share an array** (the loader
+  relocates each cell's array entries once). Empty bit 0–3 lists are offset 0 inside the array.
+* Empty collision tables keep a non-zero offset (193 of them in the main game).
+* Header `0x1C–0x30` ("bounds") is read only by 0x02059BE8, which turns it into a centre and radius for a
+  camera set-up (stored at +0x120… of the camera object). It is not a fall-out limit; edits leave it alone.
+* Stage files may grow a lot: the largest original decoded stage is 894,672 bytes (`smb2_be04`), so the
+  game's stage buffer is at least that large. Edit test 4 grows 1-1 from 85 KB to 170 KB.
+
+How `trcore/stc/geometry_edit.py` edits a group (nothing that exists moves):
+
+* `remove_box`: faces and edges crossing the box's x/z sides are cut there; the parts outside stay
+  (re-encoded as quads or triangles), and the cut gets edges and corner points. Only pieces entirely
+  within the optional y range are touched.
+* `add_polygons`: convex planar polygons become quads (parallelograms) or triangle fans, plus an edge per
+  side and a corner point per corner.
+* Changed tables are rebuilt at the end of the file: kept records first, byte-for-byte and in order, then
+  new ones. Kept records keep exactly their cells; new records get extent + 0.75. Cells get new lists and
+  their own new arrays; if added geometry reaches outside the grid, the grid grows by whole cells (old cells
+  keep their entries; new cells also list existing pieces and objects by the same rules).
+* Corners stored through E1/E2 come back within about 1/4096 per unit of face size (as in the originals).
 

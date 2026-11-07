@@ -193,3 +193,56 @@ def dual_vectors(p: Vec, v1: Vec, v2: Vec) -> Tuple[Vec, Vec, Vec]:
     e1 = tuple(inv_t[k][0] for k in range(3))
     e2 = tuple(inv_t[k][1] for k in range(3))
     return n, e1, e2
+
+
+def probe(data: bytes, pos: Vec, radius: float = 0.5, group: int = 0) -> Optional[dict]:
+    """What a ball at `pos` (the group's rest-pose coordinates) is touching, found the way the game does:
+    only through the cell under it (None if it is outside the grid). Static check, not a physics model:
+    a face counts when the ball's centre is in front of it within `radius` and its foot point lies on
+    the face; an edge or point counts when it is within `radius` of the centre."""
+    import math
+    from .cells import read_grids
+    grid = read_grids(data)[group]
+    if not grid.present:
+        return None
+    i = (int(round(pos[0] * FX)) - grid.ox) // grid.sx
+    j = (int(round(pos[2] * FX)) - grid.oz) // grid.sz
+    if not (0 <= i < grid.nx and 0 <= j < grid.nz):
+        return None
+    _mask, _arr, lists = grid.cells[j * grid.nx + i]
+    col = read_collision(data)[group]
+    out = {"cell": j * grid.nx + i, "quad": [], "triangle": [], "edge": [], "point": []}
+    for kind, (bit, _c, _d, size) in TABLES.items():
+        for li in (lists.get(bit, (0, None))[1] or ()):
+            rec = col[kind][li]
+            if kind in ("quad", "triangle"):
+                cs = rec["corners"]
+                if not cs:
+                    continue
+                n = rec["normal"]
+                p = cs[0]
+                d = sum((pos[k] - p[k]) * n[k] for k in range(3))
+                if not -1e-3 <= d <= radius + 1e-3:
+                    continue
+                foot = tuple(pos[k] - d * n[k] for k in range(3))
+                v1, v2 = (cs[1], cs[3]) if kind == "quad" else (cs[1], cs[2])
+                _n, e1, e2 = dual_vectors(p, v1, v2)
+                u = sum((foot[k] - p[k]) * e1[k] for k in range(3))
+                v = sum((foot[k] - p[k]) * e2[k] for k in range(3))
+                ok = (u >= -1e-4 and v >= -1e-4 and (u + v <= 1 + 1e-4 if kind == "triangle" else
+                                                    (u <= 1 + 1e-4 and v <= 1 + 1e-4)))
+                if ok:
+                    out[kind].append(li)
+            elif kind == "edge":
+                a, b = rec["start"], rec["end"]
+                ab = tuple(b[k] - a[k] for k in range(3))
+                L2 = sum(x * x for x in ab) or 1e-12
+                t = max(0.0, min(1.0, sum((pos[k] - a[k]) * ab[k] for k in range(3)) / L2))
+                q = tuple(a[k] + ab[k] * t for k in range(3))
+                if math.dist(q, pos) <= radius + 1e-3:
+                    out[kind].append(li)
+            else:
+                if math.dist(rec["point"], pos) <= radius + 1e-3:
+                    out[kind].append(li)
+    out["touching"] = any(out[k] for k in ("quad", "triangle", "edge", "point"))
+    return out

@@ -1,0 +1,377 @@
+{
+ "schema": "trcore.edit_plan/3",
+ "title": "Edit test 4: collision removed and added, model polygons added (W1-1, W1-2)",
+ "base_rom_sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17",
+ "stages": [
+  {
+   "stage_key": "smb1_be01",
+   "where": "World 1-1 Elementary",
+   "collision": [
+    {
+     "op": "remove_box",
+     "group": 0,
+     "x": [
+      -1,
+      1
+     ],
+     "test": "H",
+     "label": "H: 2-unit strip without collision across most of the width (x -1..1, z -5..1); a 3-unit lane at z 1..4 stays solid",
+     "prediction": "between banana 1 and banana 2 the floor is still drawn, but a ball rolling straight from the start falls through it; along the lane on the +z side (the side of the banana beside the goal at z +3.25) the floor still holds",
+     "z": [
+      -5,
+      1
+     ]
+    },
+    {
+     "op": "remove_box",
+     "group": 0,
+     "x": [
+      10.0,
+      10.3
+     ],
+     "z": [
+      -2,
+      2
+     ],
+     "y": [
+      0.45,
+      0.85
+     ],
+     "test": "I",
+     "label": "I: 4-unit gap in the far guard rail (collision only)",
+     "prediction": "behind the goal the guard rail is still drawn, but the ball passes through its middle 4 units"
+    },
+    {
+     "op": "add_polygons",
+     "group": 0,
+     "polygons": [
+      [
+       [
+        10.2,
+        0.1,
+        -2
+       ],
+       [
+        10.2,
+        0.1,
+        2
+       ],
+       [
+        14.2,
+        0.1,
+        2
+       ],
+       [
+        14.2,
+        0.1,
+        -2
+       ]
+      ]
+     ],
+     "test": "I",
+     "label": "I: invisible 4 x 4 floor beyond the far edge, level with the edge's lip (y 0.1)",
+     "prediction": "past the far edge the ball rolls on nothing visible for 4 units, can roll back, and falls when it leaves the 4 x 4 square"
+    }
+   ]
+  },
+  {
+   "stage_key": "smbds_023",
+   "where": "World 1-2 Sine Wave",
+   "model": [
+    {
+     "op": "add_polygons",
+     "shape": "Arc02",
+     "polygons": [
+      [
+       [
+        -1,
+        2.0,
+        34
+       ],
+       [
+        -1,
+        2.0,
+        36
+       ],
+       [
+        1,
+        2.0,
+        36
+       ],
+       [
+        1,
+        2.0,
+        34
+       ]
+      ],
+      [
+       [
+        1,
+        2.0,
+        34
+       ],
+       [
+        1,
+        2.0,
+        36
+       ],
+       [
+        -1,
+        2.0,
+        36
+       ],
+       [
+        -1,
+        2.0,
+        34
+       ]
+      ]
+     ],
+     "test": "J",
+     "label": "J: 2 x 2 floor-textured panel hovering 2 units above the start straight (drawn both sides), no collision",
+     "prediction": "a floating square with the floor's grid texture just ahead of the start; the ball rolls under it untouched"
+    },
+    {
+     "op": "add_polygons",
+     "shape": "Arc02",
+     "polygons": [
+      [
+       [
+        -2,
+        1,
+        30
+       ],
+       [
+        -2,
+        1,
+        32
+       ],
+       [
+        -0.5,
+        1,
+        32
+       ],
+       [
+        -0.5,
+        1,
+        30
+       ]
+      ],
+      [
+       [
+        -0.5,
+        0,
+        30
+       ],
+       [
+        -0.5,
+        1,
+        30
+       ],
+       [
+        -0.5,
+        1,
+        32
+       ],
+       [
+        -0.5,
+        0,
+        32
+       ]
+      ],
+      [
+       [
+        -2,
+        0,
+        32
+       ],
+       [
+        -2,
+        1,
+        32
+       ],
+       [
+        -2,
+        1,
+        30
+       ],
+       [
+        -2,
+        0,
+        30
+       ]
+      ],
+      [
+       [
+        -0.5,
+        0,
+        32
+       ],
+       [
+        -0.5,
+        1,
+        32
+       ],
+       [
+        -2,
+        1,
+        32
+       ],
+       [
+        -2,
+        0,
+        32
+       ]
+      ],
+      [
+       [
+        -2,
+        0,
+        30
+       ],
+       [
+        -2,
+        1,
+        30
+       ],
+       [
+        -0.5,
+        1,
+        30
+       ],
+       [
+        -0.5,
+        0,
+        30
+       ]
+      ]
+     ],
+     "test": "K",
+     "label": "K: low box, 1.5 wide x 2 deep x 1 high, on one half of the straight (model)",
+     "prediction": "a grid-textured box on one half of the straight, about 6-8 units ahead of the start"
+    }
+   ],
+   "collision": [
+    {
+     "op": "add_polygons",
+     "group": 0,
+     "polygons": [
+      [
+       [
+        -2,
+        1,
+        30
+       ],
+       [
+        -2,
+        1,
+        32
+       ],
+       [
+        -0.5,
+        1,
+        32
+       ],
+       [
+        -0.5,
+        1,
+        30
+       ]
+      ],
+      [
+       [
+        -0.5,
+        0,
+        30
+       ],
+       [
+        -0.5,
+        1,
+        30
+       ],
+       [
+        -0.5,
+        1,
+        32
+       ],
+       [
+        -0.5,
+        0,
+        32
+       ]
+      ],
+      [
+       [
+        -2,
+        0,
+        32
+       ],
+       [
+        -2,
+        1,
+        32
+       ],
+       [
+        -2,
+        1,
+        30
+       ],
+       [
+        -2,
+        0,
+        30
+       ]
+      ],
+      [
+       [
+        -0.5,
+        0,
+        32
+       ],
+       [
+        -0.5,
+        1,
+        32
+       ],
+       [
+        -2,
+        1,
+        32
+       ],
+       [
+        -2,
+        0,
+        32
+       ]
+      ],
+      [
+       [
+        -2,
+        0,
+        30
+       ],
+       [
+        -2,
+        1,
+        30
+       ],
+       [
+        -0.5,
+        1,
+        30
+       ],
+       [
+        -0.5,
+        0,
+        30
+       ]
+      ]
+     ],
+     "test": "K",
+     "label": "K: the same box (collision)",
+     "prediction": "the box is solid: the ball cannot roll through it and bounces off its sides; the other half of the straight stays free"
+    }
+   ]
+  }
+ ]
+}

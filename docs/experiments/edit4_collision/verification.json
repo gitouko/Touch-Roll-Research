@@ -1,0 +1,444 @@
+{
+ "rom_sha1": "20e046a5f3bd983afd38ba9c7be7bfe24bde89f4",
+ "files_changed": [
+  "model/stage/smbds_023_nsbmd.lz",
+  "stcoli/smb1_be01_stc.lz",
+  "stcoli/smbds_023_stc.lz"
+ ],
+ "smb1_be01": {
+  "errors": [],
+  "cell_rule_problems": {
+   "cells without bits 0-3": 0,
+   "cells with bits above 6": 0,
+   "lists not sorted / with repeats": 0,
+   "list index out of range": 0,
+   "bananas in no cell": 0,
+   "goals in no cell": 0,
+   "bumpers in no cell": 0
+  },
+  "collision": {
+   "quads": 195,
+   "quads in no cell": 0,
+   "triangles": 300,
+   "triangles in no cell": 0,
+   "edges": 877,
+   "edges in no cell": 0,
+   "points": 383,
+   "points in no cell": 0
+  }
+ },
+ "smbds_023": {
+  "errors": [],
+  "cell_rule_problems": {
+   "cells without bits 0-3": 0,
+   "cells with bits above 6": 0,
+   "lists not sorted / with repeats": 0,
+   "list index out of range": 0,
+   "bananas in no cell": 0,
+   "goals in no cell": 0,
+   "bumpers in no cell": 0
+  },
+  "collision": {
+   "quads": 242,
+   "quads in no cell": 0,
+   "triangles": 350,
+   "triangles in no cell": 0,
+   "edges": 1070,
+   "edges in no cell": 0,
+   "points": 480,
+   "points in no cell": 0
+  }
+ },
+ "probes": {
+  "H: ball resting on the floor at x=0 (middle of the strip), z=0": {
+   "original": {
+    "quad": 4,
+    "triangle": 0,
+    "edge": 4,
+    "point": 1
+   },
+   "edited": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "H: same at z=-3": {
+   "original": {
+    "quad": 2,
+    "triangle": 0,
+    "edge": 1,
+    "point": 0
+   },
+   "edited": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "H: ball in the lane that stays solid (x 0, z +2.5)": {
+   "original": {
+    "quad": 2,
+    "triangle": 0,
+    "edge": 1,
+    "point": 0
+   },
+   "edited": {
+    "quad": 2,
+    "triangle": 0,
+    "edge": 1,
+    "point": 0
+   }
+  },
+  "H: ball on the floor at x=-2 (before the strip)": {
+   "original": {
+    "quad": 2,
+    "triangle": 0,
+    "edge": 1,
+    "point": 0
+   },
+   "edited": {
+    "quad": 2,
+    "triangle": 0,
+    "edge": 1,
+    "point": 0
+   }
+  },
+  "H: ball on the floor at x=+2 (after the strip)": {
+   "original": {
+    "quad": 2,
+    "triangle": 0,
+    "edge": 1,
+    "point": 0
+   },
+   "edited": {
+    "quad": 2,
+    "triangle": 0,
+    "edge": 1,
+    "point": 0
+   }
+  },
+  "I: ball against the far rail at the gap (x 9.6, y 0.6, z 0)": {
+   "original": {
+    "quad": 2,
+    "triangle": 0,
+    "edge": 1,
+    "point": 0
+   },
+   "edited": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "I: ball against the far rail outside the gap (x 9.6, y 0.6, z 2.5)": {
+   "original": {
+    "quad": 1,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   },
+   "edited": {
+    "quad": 1,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "I: ball inside the rail line at the gap (x 10.15, y 0.6, z 0)": {
+   "original": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 12,
+    "point": 4
+   },
+   "edited": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "I: ball on the invisible floor (x 12, y 0.6, z 0)": {
+   "original": "outside the grid (no collision at all)",
+   "edited": {
+    "quad": 1,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "I: ball on the invisible floor near its far corner (x 14.0, y 0.6, z 1.8)": {
+   "original": "outside the grid (no collision at all)",
+   "edited": {
+    "quad": 1,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "I: ball beyond the invisible floor (x 15, y 0.6, z 0)": {
+   "original": "outside the grid (no collision at all)",
+   "edited": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "I: ball beside the invisible floor (x 12, y 0.6, z 3)": {
+   "original": "outside the grid (no collision at all)",
+   "edited": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "J: ball at J's height, under it (x 0, y 0.5, z 35)": {
+   "original": {
+    "quad": 1,
+    "triangle": 1,
+    "edge": 1,
+    "point": 0
+   },
+   "edited": {
+    "quad": 1,
+    "triangle": 1,
+    "edge": 1,
+    "point": 0
+   }
+  },
+  "J: ball touching J's plane from above (x 0, y 2.4, z 35)": {
+   "original": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   },
+   "edited": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "K: ball on top of the box (x -1.25, y 1.5, z 31)": {
+   "original": {
+    "quad": 0,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   },
+   "edited": {
+    "quad": 1,
+    "triangle": 0,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "K: ball against the box's open side (x 0.0, y 0.5, z 31)": {
+   "original": {
+    "quad": 0,
+    "triangle": 1,
+    "edge": 0,
+    "point": 0
+   },
+   "edited": {
+    "quad": 1,
+    "triangle": 1,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "K: ball against the box's front (x -1.25, y 0.5, z 32.5)": {
+   "original": {
+    "quad": 0,
+    "triangle": 1,
+    "edge": 0,
+    "point": 0
+   },
+   "edited": {
+    "quad": 1,
+    "triangle": 1,
+    "edge": 0,
+    "point": 0
+   }
+  },
+  "K: ball on the free half of the straight (x 0.9, y 0.5, z 31)": {
+   "original": {
+    "quad": 0,
+    "triangle": 1,
+    "edge": 0,
+    "point": 0
+   },
+   "edited": {
+    "quad": 0,
+    "triangle": 1,
+    "edge": 0,
+    "point": 0
+   }
+  }
+ },
+ "K collision faces equal to model polygons (same corners, same order)": "5/5",
+ "1-1 model unchanged": true,
+ "new model polygons (J, K)": [
+  [
+   [
+    -1.0,
+    2.0,
+    34.0
+   ],
+   [
+    -1.0,
+    2.0,
+    36.0
+   ],
+   [
+    1.0,
+    2.0,
+    36.0
+   ],
+   [
+    1.0,
+    2.0,
+    34.0
+   ]
+  ],
+  [
+   [
+    1.0,
+    2.0,
+    34.0
+   ],
+   [
+    1.0,
+    2.0,
+    36.0
+   ],
+   [
+    -1.0,
+    2.0,
+    36.0
+   ],
+   [
+    -1.0,
+    2.0,
+    34.0
+   ]
+  ],
+  [
+   [
+    -2.0,
+    1.0,
+    30.0
+   ],
+   [
+    -2.0,
+    1.0,
+    32.0
+   ],
+   [
+    -0.5,
+    1.0,
+    32.0
+   ],
+   [
+    -0.5,
+    1.0,
+    30.0
+   ]
+  ],
+  [
+   [
+    -0.5,
+    0.0,
+    30.0
+   ],
+   [
+    -0.5,
+    1.0,
+    30.0
+   ],
+   [
+    -0.5,
+    1.0,
+    32.0
+   ],
+   [
+    -0.5,
+    0.0,
+    32.0
+   ]
+  ],
+  [
+   [
+    -2.0,
+    0.0,
+    32.0
+   ],
+   [
+    -2.0,
+    1.0,
+    32.0
+   ],
+   [
+    -2.0,
+    1.0,
+    30.0
+   ],
+   [
+    -2.0,
+    0.0,
+    30.0
+   ]
+  ],
+  [
+   [
+    -0.5,
+    0.0,
+    32.0
+   ],
+   [
+    -0.5,
+    1.0,
+    32.0
+   ],
+   [
+    -2.0,
+    1.0,
+    32.0
+   ],
+   [
+    -2.0,
+    0.0,
+    32.0
+   ]
+  ],
+  [
+   [
+    -2.0,
+    0.0,
+    30.0
+   ],
+   [
+    -2.0,
+    1.0,
+    30.0
+   ],
+   [
+    -0.5,
+    1.0,
+    30.0
+   ],
+   [
+    -0.5,
+    0.0,
+    30.0
+   ]
+  ]
+ ]
+}

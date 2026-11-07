@@ -1,7 +1,17 @@
 # Milestones 4 + 4b — collision editing and platforms: findings and plan
 
-Status: **collision decoded** (spec §17, Level 2). Editing and platform building are **not implemented
-yet**. Edit test 4 below is proposed and waiting for the owner's "go".
+Status (2026-11-07): **collision decoded** (spec §17, Level 2). **Collision editing and model polygons are
+implemented in trcore** (`trcore/stc/geometry_edit.py`, `trcore/nitro/nsbmd_write.py`, plan schema
+`trcore.edit_plan/3`; spec §15, §17.3). **Edit test 4 is built** and waiting for the in-game test:
+`docs/experiments/edit4_collision/`. The editor UI for collision and platforms follows once it passes.
+
+Changes to the test as proposed, found while building it:
+* 1-1 is fenced all round by a guard rail the ball cannot pass under, so **I** also opens a 4-unit gap in
+  the far rail's collision (the rail stays drawn), and the invisible floor sits level with the edge's lip.
+* The collision grid ended 0.5 past the rail, and nothing outside the grid can be touched (spec §17.3), so
+  the 1-1 grid grows by 5 columns for **I**.
+* **H** leaves a 3-unit lane solid on one side so the far end (I) can still be reached.
+* **J** is drawn from both sides (stage materials cull back faces).
 
 ## What we know now
 
@@ -23,10 +33,11 @@ yet**. Edit test 4 below is proposed and waiting for the owner's "go".
      `dual_vectors()`;
    * every unique edge gives an edge record and every unique corner a corner point;
    * cells come from the 0.5 rule plus a safety margin.
-3. **Visible geometry (NSBMD):** append a new shape (GX display list: positions, texture coordinates,
-   normals or colours) to the stage model. Draw it with one of the stage's **existing materials and
-   textures** as the placeholder, so the stage's `.nsbtx` stays untouched. Update the model's
-   dictionaries, sizes and counts, then compress and write the model file like a stage file.
+3. **Visible geometry (NSBMD):** add the polygons to an **existing shape** (its display list is copied to
+   the end of the model with the new GX commands after it), so they are drawn with that shape's
+   **existing material and texture** as the placeholder and the stage's `.nsbtx` stays untouched. No
+   dictionary or SBC change is needed. Update sizes, counts and the bounding box, then compress and write
+   the model file like a stage file.
 4. **Platform = both:** the editor's "Add platform" (a box or ramp first) creates the model polygons and
    their collision together in one group, so the two can never disagree.
 5. **Checks:**

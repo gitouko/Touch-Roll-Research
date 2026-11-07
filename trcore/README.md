@@ -87,12 +87,23 @@ A stage entry can also carry `"objects": [...]` with `add`, `remove` and `move` 
 `trcore/stc/objects.py`). The changed pool is rebuilt as one contiguous array at the end of the stage
 file, slices and header totals are updated, and that object type's collision cell lists are rebuilt
 for the affected groups. Nothing that already exists is moved. Every result is checked before
-writing (structure, lists, coverage, offsets, the 255 banana-value limit). Status: built, in-game
-test pending (edit test 3).
+writing (structure, lists, coverage, offsets, the 255 banana-value limit). Status: confirmed in-game
+(edit test 3).
 
-## Non-goals of this version
+## Collision and model geometry (plan schema `trcore.edit_plan/3`)
 
-No adding/removing objects, no GUI, no collision decoding. Field meanings are confirmed only where
+A stage entry can also carry `"collision": [...]` (`remove_box`, `add_polygons`; format in
+`trcore/stc/geometry_edit.py`) and `"model": [...]` (`add_polygons` to a named shape of the stage's model;
+`trcore/nitro/nsbmd_write.py`). Collision tables are rebuilt at the end of the stage file with the kept
+records unchanged and first, cell lists for bits 0–3 are rebuilt, and the collision grid grows when new
+geometry lies outside it (spec §17.3). Model polygons are drawn with the shape's own material and texture;
+the model file is replaced too. Every result is re-read and checked before writing. Status: built, in-game
+test pending (edit test 4, `docs/experiments/edit4_collision/`). `ramdump-compare` also checks the stage's
+model in memory.
+
+## Evidence
+
+The editor GUI lives in `tredit/`. Field meanings are confirmed only where
 the spec's §14 lists an in-game test (start, goals incl. red flag, bumper position, bananas incl. bunch);
 see
 `docs/research_notes/stc_format_spec.md` for the evidence and the experiments that confirm them.
@@ -106,6 +117,9 @@ trcore/romwrite.py      verified "replace a file in a NEW ROM copy"
 trcore/stc/edit.py      same-size field edits of known record fields, with structure checks
 trcore/stc/objects.py   add / remove / move goals, bumpers, bananas (pools + collision cell lists)
 trcore/stc/cells.py     per-group collision cell grid: reader, footprint rule, coverage check
+trcore/stc/collision.py collision tables reader (quads, triangles, edges, points) + contact probe
+trcore/stc/geometry_edit.py  remove / add collision geometry, rebuild lists, grow the grid
+trcore/nitro/nsbmd_write.py  add polygons to a stage model's shape
 trcore/editplan.py      JSON edit plan -> new ROM copy + patch record
 trcore/ramdump.py       compare a BizHawk Main RAM dump with the expected stage file
 trcore/nitro/nsbmd.py   read-only NITRO model reader (nodes, structure code, display lists -> triangles)

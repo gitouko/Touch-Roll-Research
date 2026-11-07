@@ -1,0 +1,740 @@
+{
+ "schema": "trcore.rom_patch_record/1",
+ "tool": "trcore 0.1.0",
+ "note": "Edit test 4: collision removed and added, model polygons added (W1-1, W1-2)",
+ "input_rom": {
+  "name": "0333 - Super Monkey Ball - Touch & Roll (USA) (En,Fr,De,Es,It).nds",
+  "sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17"
+ },
+ "output_rom": {
+  "name": "TR_edit4_collision.nds",
+  "sha1": "20e046a5f3bd983afd38ba9c7be7bfe24bde89f4"
+ },
+ "output_identical_to_input": false,
+ "replaced_previous_output": false,
+ "replacements": [
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_be01_stc.lz",
+   "file_id": 2488,
+   "placement": "relocated",
+   "old": {
+    "start": "0x113F000",
+    "end": "0x1144BC1",
+    "size": 23489,
+    "sha256": "3b9a8bc71e7d69e503305536e890e727c7c7fa916f055a97f1cd88249b8caf4a",
+    "decoded_sha256": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+    "decoded_size": 85296
+   },
+   "new": {
+    "start": "0x2D21C00",
+    "end": "0x2D2D273",
+    "size": 46707,
+    "sha256": "36a5842cabebb079d725377686e19207d18e6aa3b17b61528f8d7c81027066dd",
+    "decoded_sha256": "3785896875f6e45074e6814852dbc1f4e8f0c905e615711ac4a824a11961c9af",
+    "decoded_size": 170460
+   },
+   "header_changes": [
+    {
+     "field": "used_rom_size",
+     "offset": "0x80",
+     "old": "0x2D21B38",
+     "new": "0x2D2D273"
+    },
+    {
+     "field": "header_crc16",
+     "offset": "0x15E",
+     "old": "0x030E",
+     "new": "0xFD1B"
+    }
+   ]
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smbds_023_stc.lz",
+   "file_id": 2603,
+   "placement": "relocated",
+   "old": {
+    "start": "0x3B9C00",
+    "end": "0x3C9344",
+    "size": 63300,
+    "sha256": "d36d87942e96d6a71a01449f4eb6d78fb503f0e6c62d9e2487f49fb4771efd6a",
+    "decoded_sha256": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+    "decoded_size": 184992
+   },
+   "new": {
+    "start": "0x2D2D400",
+    "end": "0x2D41531",
+    "size": 82225,
+    "sha256": "acec1751ec725be59f3767846d2ae39fe9bc26aec440cdd1b15cfc11aad61f0e",
+    "decoded_sha256": "e8b3e1416996f7c6e6880eb9bbe6161e81af0dd8bb6d7eddfcac6113397d45b1",
+    "decoded_size": 240544
+   },
+   "header_changes": [
+    {
+     "field": "used_rom_size",
+     "offset": "0x80",
+     "old": "0x2D2D273",
+     "new": "0x2D41531"
+    },
+    {
+     "field": "header_crc16",
+     "offset": "0x15E",
+     "old": "0xFD1B",
+     "new": "0xEDFF"
+    }
+   ]
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "model/stage/smbds_023_nsbmd.lz",
+   "file_id": 610,
+   "placement": "relocated",
+   "old": {
+    "start": "0x293BA00",
+    "end": "0x293DEB8",
+    "size": 9400,
+    "sha256": "77461655daaa3be97b39a1ef70a1f4ac9550aa29cff400a8a4f7744d73ac6297",
+    "decoded_sha256": "48e82b657c883e81856097333248cb99a13c8a3a30e1fef2a5eed9f63b7cb7d1",
+    "decoded_size": 15708
+   },
+   "new": {
+    "start": "0x2D41600",
+    "end": "0x2D4404B",
+    "size": 10827,
+    "sha256": "68291fad8f7575a6fadec25b2572c191bc0ce79c83d721f9b835c8f7821f1c53",
+    "decoded_sha256": "e454edd3b43e4908b7d6f09c61816874830ff7a698a8f14f70acfd9a2e10d156",
+    "decoded_size": 17360
+   },
+   "header_changes": [
+    {
+     "field": "used_rom_size",
+     "offset": "0x80",
+     "old": "0x2D41531",
+     "new": "0x2D4404B"
+    },
+    {
+     "field": "header_crc16",
+     "offset": "0x15E",
+     "old": "0xEDFF",
+     "new": "0x8254"
+    }
+   ]
+  }
+ ],
+ "plan_schema": "trcore.edit_plan/3",
+ "stage_edits": [
+  {
+   "file": "stcoli/smb1_be01_stc.lz",
+   "stage_key": "smb1_be01",
+   "where": "World 1-1 Elementary",
+   "decoded_size": 85296,
+   "decoded_size_after": 170460,
+   "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+   "decoded_sha256_after": "3785896875f6e45074e6814852dbc1f4e8f0c905e615711ac4a824a11961c9af",
+   "edits": [],
+   "objects": null,
+   "collision": {
+    "ops": [
+     {
+      "op": "remove_box",
+      "group": 0,
+      "label": "H: 2-unit strip without collision across most of the width (x -1..1, z -5..1); a 3-unit lane at z 1..4 stays solid",
+      "faces_removed": 0,
+      "faces_cut": 22,
+      "face_pieces_added": 28,
+      "edges_removed": 8,
+      "edges_cut": 28,
+      "edge_pieces_added": 28,
+      "points_removed": 12,
+      "cut_edges_added": 30,
+      "cut_points_added": 41,
+      "kept_crossing_height_range": 0,
+      "box": {
+       "x": [
+        -1.0,
+        1.0
+       ],
+       "z": [
+        -5.0,
+        1.0
+       ]
+      }
+     },
+     {
+      "op": "remove_box",
+      "group": 0,
+      "label": "I: 4-unit gap in the far guard rail (collision only)",
+      "faces_removed": 0,
+      "faces_cut": 8,
+      "face_pieces_added": 8,
+      "edges_removed": 4,
+      "edges_cut": 8,
+      "edge_pieces_added": 8,
+      "points_removed": 4,
+      "cut_edges_added": 8,
+      "cut_points_added": 12,
+      "kept_crossing_height_range": 0,
+      "box": {
+       "x": [
+        10.0,
+        10.300048828125
+       ],
+       "y": [
+        0.449951171875,
+        0.85009765625
+       ],
+       "z": [
+        -2.0,
+        2.0
+       ]
+      }
+     },
+     {
+      "op": "add_polygons",
+      "group": 0,
+      "label": "I: invisible 4 x 4 floor beyond the far edge, level with the edge's lip (y 0.1)",
+      "polygons": 1,
+      "faces_added": 1,
+      "edges_added": 4,
+      "points_added": 4
+     }
+    ],
+    "groups": {
+     "0": {
+      "tables": {
+       "quad": {
+        "records": 195,
+        "kept": 164,
+        "new": 31,
+        "offset": "0x14D30"
+       },
+       "triangle": {
+        "records": 300,
+        "kept": 294,
+        "new": 6,
+        "offset": "0x174CC"
+       },
+       "edge": {
+        "records": 877,
+        "kept": 799,
+        "new": 78,
+        "offset": "0x1B1BC"
+       },
+       "point": {
+        "records": 383,
+        "kept": 326,
+        "new": 57,
+        "offset": "0x21F5C"
+       }
+      },
+      "grid": {
+       "before": [
+        21,
+        9
+       ],
+       "after": [
+        26,
+        9
+       ],
+       "grown": true,
+       "origin_after": [
+        -10.699951171875,
+        -4.699951171875
+       ],
+       "table": "0x2928C",
+       "cells_added": 45
+      },
+      "cells_rewritten": 234
+     }
+    },
+    "decoded_size_before": 85296,
+    "decoded_size_after": 170460,
+    "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+    "decoded_sha256_after": "3785896875f6e45074e6814852dbc1f4e8f0c905e615711ac4a824a11961c9af"
+   },
+   "model": null
+  },
+  {
+   "file": "stcoli/smbds_023_stc.lz",
+   "stage_key": "smbds_023",
+   "where": "World 1-2 Sine Wave",
+   "decoded_size": 184992,
+   "decoded_size_after": 240544,
+   "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+   "decoded_sha256_after": "e8b3e1416996f7c6e6880eb9bbe6161e81af0dd8bb6d7eddfcac6113397d45b1",
+   "edits": [],
+   "objects": null,
+   "collision": {
+    "ops": [
+     {
+      "op": "add_polygons",
+      "group": 0,
+      "label": "K: the same box (collision)",
+      "polygons": 5,
+      "faces_added": 5,
+      "edges_added": 12,
+      "points_added": 8
+     }
+    ],
+    "groups": {
+     "0": {
+      "tables": {
+       "quad": {
+        "records": 242,
+        "kept": 237,
+        "new": 5,
+        "offset": "0x2D2A0"
+       },
+       "edge": {
+        "records": 1070,
+        "kept": 1058,
+        "new": 12,
+        "offset": "0x303C8"
+       },
+       "point": {
+        "records": 480,
+        "kept": 472,
+        "new": 8,
+        "offset": "0x38988"
+       }
+      },
+      "grid": {
+       "before": [
+        28,
+        81
+       ],
+       "after": [
+        28,
+        81
+       ],
+       "grown": false
+      },
+      "cells_rewritten": 20
+     }
+    },
+    "decoded_size_before": 184992,
+    "decoded_size_after": 240544,
+    "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+    "decoded_sha256_after": "e8b3e1416996f7c6e6880eb9bbe6161e81af0dd8bb6d7eddfcac6113397d45b1"
+   },
+   "model": {
+    "file": "model/stage/smbds_023_nsbmd.lz",
+    "size_before": 15708,
+    "size_after": 17360,
+    "sha256_before": "48e82b657c883e81856097333248cb99a13c8a3a30e1fef2a5eed9f63b7cb7d1",
+    "sha256_after": "e454edd3b43e4908b7d6f09c61816874830ff7a698a8f14f70acfd9a2e10d156",
+    "ops": [
+     {
+      "readback_max_error": 0.0,
+      "triangles_after": 838,
+      "shape": "Arc02",
+      "material_note": "drawn with the shape's own material",
+      "polygons_added": 7,
+      "quads": 7,
+      "triangles": 0,
+      "vertices": 28,
+      "display_list_offset": "0x3D5C",
+      "display_list_size_before": 1216,
+      "display_list_size_after": 1652,
+      "size_before": 15708,
+      "size_after": 17360,
+      "sha256_before": "48e82b657c883e81856097333248cb99a13c8a3a30e1fef2a5eed9f63b7cb7d1",
+      "sha256_after": "e454edd3b43e4908b7d6f09c61816874830ff7a698a8f14f70acfd9a2e10d156",
+      "bounding_box_changed": true,
+      "ops": [
+       {
+        "label": "J: 2 x 2 floor-textured panel hovering 2 units above the start straight (drawn both sides), no collision",
+        "test": "J",
+        "polygons": 2
+       },
+       {
+        "label": "K: low box, 1.5 wide x 2 deep x 1 high, on one half of the straight (model)",
+        "test": "K",
+        "polygons": 5
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ],
+ "status": "generated - not yet verified in-game",
+ "plan": {
+  "schema": "trcore.edit_plan/3",
+  "title": "Edit test 4: collision removed and added, model polygons added (W1-1, W1-2)",
+  "base_rom_sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17",
+  "stages": [
+   {
+    "stage_key": "smb1_be01",
+    "where": "World 1-1 Elementary",
+    "collision": [
+     {
+      "op": "remove_box",
+      "group": 0,
+      "x": [
+       -1,
+       1
+      ],
+      "test": "H",
+      "label": "H: 2-unit strip without collision across most of the width (x -1..1, z -5..1); a 3-unit lane at z 1..4 stays solid",
+      "prediction": "between banana 1 and banana 2 the floor is still drawn, but a ball rolling straight from the start falls through it; along the lane on the +z side (the side of the banana beside the goal at z +3.25) the floor still holds",
+      "z": [
+       -5,
+       1
+      ]
+     },
+     {
+      "op": "remove_box",
+      "group": 0,
+      "x": [
+       10.0,
+       10.3
+      ],
+      "z": [
+       -2,
+       2
+      ],
+      "y": [
+       0.45,
+       0.85
+      ],
+      "test": "I",
+      "label": "I: 4-unit gap in the far guard rail (collision only)",
+      "prediction": "behind the goal the guard rail is still drawn, but the ball passes through its middle 4 units"
+     },
+     {
+      "op": "add_polygons",
+      "group": 0,
+      "polygons": [
+       [
+        [
+         10.2,
+         0.1,
+         -2
+        ],
+        [
+         10.2,
+         0.1,
+         2
+        ],
+        [
+         14.2,
+         0.1,
+         2
+        ],
+        [
+         14.2,
+         0.1,
+         -2
+        ]
+       ]
+      ],
+      "test": "I",
+      "label": "I: invisible 4 x 4 floor beyond the far edge, level with the edge's lip (y 0.1)",
+      "prediction": "past the far edge the ball rolls on nothing visible for 4 units, can roll back, and falls when it leaves the 4 x 4 square"
+     }
+    ]
+   },
+   {
+    "stage_key": "smbds_023",
+    "where": "World 1-2 Sine Wave",
+    "model": [
+     {
+      "op": "add_polygons",
+      "shape": "Arc02",
+      "polygons": [
+       [
+        [
+         -1,
+         2.0,
+         34
+        ],
+        [
+         -1,
+         2.0,
+         36
+        ],
+        [
+         1,
+         2.0,
+         36
+        ],
+        [
+         1,
+         2.0,
+         34
+        ]
+       ],
+       [
+        [
+         1,
+         2.0,
+         34
+        ],
+        [
+         1,
+         2.0,
+         36
+        ],
+        [
+         -1,
+         2.0,
+         36
+        ],
+        [
+         -1,
+         2.0,
+         34
+        ]
+       ]
+      ],
+      "test": "J",
+      "label": "J: 2 x 2 floor-textured panel hovering 2 units above the start straight (drawn both sides), no collision",
+      "prediction": "a floating square with the floor's grid texture just ahead of the start; the ball rolls under it untouched"
+     },
+     {
+      "op": "add_polygons",
+      "shape": "Arc02",
+      "polygons": [
+       [
+        [
+         -2,
+         1,
+         30
+        ],
+        [
+         -2,
+         1,
+         32
+        ],
+        [
+         -0.5,
+         1,
+         32
+        ],
+        [
+         -0.5,
+         1,
+         30
+        ]
+       ],
+       [
+        [
+         -0.5,
+         0,
+         30
+        ],
+        [
+         -0.5,
+         1,
+         30
+        ],
+        [
+         -0.5,
+         1,
+         32
+        ],
+        [
+         -0.5,
+         0,
+         32
+        ]
+       ],
+       [
+        [
+         -2,
+         0,
+         32
+        ],
+        [
+         -2,
+         1,
+         32
+        ],
+        [
+         -2,
+         1,
+         30
+        ],
+        [
+         -2,
+         0,
+         30
+        ]
+       ],
+       [
+        [
+         -0.5,
+         0,
+         32
+        ],
+        [
+         -0.5,
+         1,
+         32
+        ],
+        [
+         -2,
+         1,
+         32
+        ],
+        [
+         -2,
+         0,
+         32
+        ]
+       ],
+       [
+        [
+         -2,
+         0,
+         30
+        ],
+        [
+         -2,
+         1,
+         30
+        ],
+        [
+         -0.5,
+         1,
+         30
+        ],
+        [
+         -0.5,
+         0,
+         30
+        ]
+       ]
+      ],
+      "test": "K",
+      "label": "K: low box, 1.5 wide x 2 deep x 1 high, on one half of the straight (model)",
+      "prediction": "a grid-textured box on one half of the straight, about 6-8 units ahead of the start"
+     }
+    ],
+    "collision": [
+     {
+      "op": "add_polygons",
+      "group": 0,
+      "polygons": [
+       [
+        [
+         -2,
+         1,
+         30
+        ],
+        [
+         -2,
+         1,
+         32
+        ],
+        [
+         -0.5,
+         1,
+         32
+        ],
+        [
+         -0.5,
+         1,
+         30
+        ]
+       ],
+       [
+        [
+         -0.5,
+         0,
+         30
+        ],
+        [
+         -0.5,
+         1,
+         30
+        ],
+        [
+         -0.5,
+         1,
+         32
+        ],
+        [
+         -0.5,
+         0,
+         32
+        ]
+       ],
+       [
+        [
+         -2,
+         0,
+         32
+        ],
+        [
+         -2,
+         1,
+         32
+        ],
+        [
+         -2,
+         1,
+         30
+        ],
+        [
+         -2,
+         0,
+         30
+        ]
+       ],
+       [
+        [
+         -0.5,
+         0,
+         32
+        ],
+        [
+         -0.5,
+         1,
+         32
+        ],
+        [
+         -2,
+         1,
+         32
+        ],
+        [
+         -2,
+         0,
+         32
+        ]
+       ],
+       [
+        [
+         -2,
+         0,
+         30
+        ],
+        [
+         -2,
+         1,
+         30
+        ],
+        [
+         -0.5,
+         1,
+         30
+        ],
+        [
+         -0.5,
+         0,
+         30
+        ]
+       ]
+      ],
+      "test": "K",
+      "label": "K: the same box (collision)",
+      "prediction": "the box is solid: the ball cannot roll through it and bounces off its sides; the other half of the straight stays free"
+     }
+    ]
+   }
+  ]
+ }
+}

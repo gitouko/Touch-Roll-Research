@@ -59,9 +59,9 @@ EXPECTED_TRIANGLES = [
 ]
 
 
-def build_nsbmd(sbc=SBC, tri_dl=TRI_DL, quad_dl=QUAD_DL, pos_scale=2.0, header_counts=(1, 1)):
+def build_nsbmd(sbc=SBC, tri_dl=TRI_DL, quad_dl=QUAD_DL, pos_scale=2.0, header_counts=(1, 1), node0_t=(1, 0, 0)):
     # nodes
-    node0 = struct.pack("<Hh3i", 0x0006, 0, FX, 0, 0)                      # rot zero, scale one, T
+    node0 = struct.pack("<Hh3i", 0x0006, 0, *(int(round(v * FX)) for v in node0_t))   # rot zero, scale one, T
     flag1 = 0x0001 | 0x0004 | 0x0008 | (4 << 4) | (2 << 8)                 # T zero, scale one, pivot 4, c=-b
     node1 = struct.pack("<Hhhh", flag1, 0, 0, FX)                          # a = 0, b = 1
     nd_names = ["root", "part"]
