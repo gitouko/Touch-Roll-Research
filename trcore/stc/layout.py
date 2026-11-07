@@ -4,8 +4,10 @@ Every structural constant used by the parser is defined here together with the
 evidence record that justifies it. Levels follow the project contract:
   0 historical lead, 1 directly observed bytes, 2 cross-sample structural
   corroboration, 3 controlled mutation, 4 confirmed in-game.
-No entry below is above level 2. "candidate_label" values (goal, bumper,
-banana, grid ...) are hypothesis names only.
+The "level" of each entry is its structural evidence; meanings confirmed by
+controlled in-game edits (Level 4, for the stated meaning only) are listed in
+IN_GAME below and attached to the entries as "in_game". Other labels (grid,
+table_7C ...) are hypothesis names only.
 
 Basis for every level-2 entry: all 183 unique decompressed .stc files in
 gitouko/touch-roll-research @ 4ddcea8c22373730d263639433bdc59448b06060.
@@ -129,7 +131,13 @@ IN_GAME = {
     "E07": "pool A +0x24 = goal position (model and trigger): edit test 1, W1-4",
     "E09": "pool C +0x00 = banana position: edit test 1, W1-1",
     "E12": "pool C +0x0C: 1 = banana bunch worth 5, 0 = single: edit test 1, W1-2",
+    "E11": "pool A +0x30: 1 = red goal, 0 = normal goal (colour): edit test 2, W1-1 and W8-1",
+    "E08": "pool B +0x24 = bumper position: edit test 2, W5-2",
+    "E13": "objects in a moving group are placed in its frame and move with it: edit test 2, W5-6; "
+           "matrices are applied transposed (world = M^T * local), goal front = local +z: edit test 2, W1-3",
 }
+IN_GAME["E05"] += "; start +0x00 = start position: edit test 2, W1-2"
+IN_GAME["E07"] += "; pool A +0x00 = goal orientation (applied transposed): edit test 2, W1-3"
 for _k, _v in IN_GAME.items():
     EVIDENCE[_k]["in_game"] = _v
 

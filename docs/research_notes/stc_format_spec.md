@@ -186,8 +186,8 @@ which files were swapped, and what was seen (screenshot if possible).
   (docs/research_notes/gate_2026-11-06/).
 * **Edit test 1 — PASSED (2026-11-06):** banana position, bunch flag, start angle and goal
   position confirmed in-game (§14, docs/experiments/edit1_world1/).
-* **Edit test 2 (pending):** red-goal flag both ways, goal rotation (matrix convention), start position,
-  bumper position, object inside a moving group (docs/experiments/edit2_bumpers_goals/).
+* **Edit test 2 — PASSED (2026-11-06):** red-goal flag both ways, goal rotation (matrix convention),
+  start position, bumper position, object inside a moving group (§14).
 * **Q6 — Collision tables:** decode `smb1_be01` (one group, simple geometry) against its model.
 * **Q7 — Meaning of 0x0C, 0x10, 0x34, `box2`, descriptor +0x58…+0x70.**
 
@@ -290,6 +290,21 @@ Edit test 1 (2026-11-06, BizHawk 2.11.1, one single-field edit per stage, memory
 **−z**; with facing +x (0xC000), +z is to the right. Across the game the start faces the goal in 88 of
 91 static-goal stages under this convention.
 
-Not yet confirmed in-game: start position, goal rotation matrix and the goal flag word (+0x30, red-goal
-candidate), bumpers (pool B), objects that belong to moving groups, and everything in §5's tables.
+Edit test 2 (2026-11-06, same method):
+
+| Field | Meaning confirmed | Evidence |
+|---|---|---|
+| pool A record +0x30 (u32) | 1 = red goal, 0 = normal goal (colour; unlock behaviour not tested) | W1-1 0 → 1 turned red; W8-1 1 → 0 no longer red |
+| start record +0x00 (3 × Q20.12) | start position | W1-2: z 38 → 35 started 3 units further forward |
+| pool A record +0x00 (3×3 Q20.12) | goal orientation; applied transposed (world = Mᵀ·local); goal front = local +z | W1-3: +90° turn, front faced right as predicted |
+| pool B record +0x24 (3 × Q20.12) | bumper position | W5-2: x +2 moved the bumper right as predicted |
+| pool slices in moving groups | objects are placed in their group's frame and move with it | W5-6: bumper raised 1 unit in group MOT_bumper01 rode higher and moved with the others |
+
+**Matrix convention:** stored matrices are applied with row vectors (equivalently world = Mᵀ·local).
+A rotation by angle a about +y (positive = turn left, as for the start angle) is stored as
+`[[cos a, 0, -sin a], [0, 1, 0], [sin a, 0, cos a]]` (rows as stored).
+
+Not yet confirmed in-game: bumper rotation (not visible on round bumpers), whether a converted red goal
+counts towards Studio One, the meaning of descriptor fields other than the slices, and everything in
+§5's tables (collision).
 
