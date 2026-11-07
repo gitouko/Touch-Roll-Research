@@ -1,0 +1,32 @@
+{
+ "schema": "trcore.ramdump_compare/1",
+ "stage_id_loaded": 111,
+ "stage_id_requested": 111,
+ "stage_key": "smbds_015",
+ "stage_data_ptr": "0x02259CE0",
+ "expected_size": 280624,
+ "words": {
+  "total": 70156,
+  "equal": 64400,
+  "relocated": 5756,
+  "other": 0
+ },
+ "tail_bytes_equal": true,
+ "relocated_fields": {
+  "group0+0x04": 1,
+  "group0+0x08": 1,
+  "group0+0x54": 1,
+  "group0+0x78": 1,
+  "group0+0x80": 1,
+  "group0+0x88": 1,
+  "group0+0x90": 1,
+  "group0+0x98": 1,
+  "group0+0xA8": 1,
+  "group0.cell_table+0x04": 3000,
+  "header.descriptor_base": 1,
+  "header.start_offset": 1,
+  "unclaimed": 2745
+ },
+ "other_diffs": [],
+ "other_diffs_truncated": false
+}
