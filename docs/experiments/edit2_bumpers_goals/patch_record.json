@@ -1,0 +1,354 @@
+{
+ "schema": "trcore.rom_patch_record/1",
+ "tool": "trcore 0.1.0",
+ "note": "Edit test 2: goal flag both ways, goal rotation, start position, bumper, object in a moving group",
+ "input_rom": {
+  "name": "0333 - Super Monkey Ball - Touch & Roll (USA) (En,Fr,De,Es,It).nds",
+  "sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17"
+ },
+ "output_rom": {
+  "name": "TR_edit2_W1_W5_W8.nds",
+  "sha1": "7ed08b0fffa0b9740c00a440167aa48f04aacc52"
+ },
+ "output_identical_to_input": false,
+ "replacements": [
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_be01_stc.lz",
+   "file_id": 2488,
+   "placement": "in_place",
+   "old": {
+    "start": "0x113F000",
+    "end": "0x1144BC1",
+    "size": 23489,
+    "sha256": "3b9a8bc71e7d69e503305536e890e727c7c7fa916f055a97f1cd88249b8caf4a",
+    "decoded_sha256": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+    "decoded_size": 85296
+   },
+   "new": {
+    "start": "0x113F000",
+    "end": "0x1144BC3",
+    "size": 23491,
+    "sha256": "6b7b44255d72ca6a4fc081308216b596346b1a465dd7c8c3a2b017f463d2f711",
+    "decoded_sha256": "87cb2f647c5d86e027919fcfe00612594d2074aa5e036ad712f9002b984fab0c",
+    "decoded_size": 85296
+   },
+   "header_changes": []
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smbds_023_stc.lz",
+   "file_id": 2603,
+   "placement": "in_place",
+   "old": {
+    "start": "0x3B9C00",
+    "end": "0x3C9344",
+    "size": 63300,
+    "sha256": "d36d87942e96d6a71a01449f4eb6d78fb503f0e6c62d9e2487f49fb4771efd6a",
+    "decoded_sha256": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+    "decoded_size": 184992
+   },
+   "new": {
+    "start": "0x3B9C00",
+    "end": "0x3C9344",
+    "size": 63300,
+    "sha256": "f1a7d8608b142ace758de247bb5b1c927a78f71a1ec2c6269efcbab45d7faedb",
+    "decoded_sha256": "ebd09312e8adb9da910c30d3736f7284480a9afada6698d3d45bb02416de9a10",
+    "decoded_size": 184992
+   },
+   "header_changes": []
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_be06_stc.lz",
+   "file_id": 2493,
+   "placement": "in_place",
+   "old": {
+    "start": "0x383C00",
+    "end": "0x397F72",
+    "size": 82802,
+    "sha256": "36bced809c67634e7dbe12747ed8639fcf950f138b0e5d59480a94598f77de25",
+    "decoded_sha256": "30b104f9246bf679f04e49d376ab145a0b55244c2b6b584dc1e197e9f5505d8e",
+    "decoded_size": 269584
+   },
+   "new": {
+    "start": "0x383C00",
+    "end": "0x397F77",
+    "size": 82807,
+    "sha256": "25b626d3de3680e55568c35f4feb8c409ab416e8c3e267d0580fd425bbee2fec",
+    "decoded_sha256": "39f9d3fc1c2a2f13dd8574c84f3e74f2efb9bf62193c2185157709a0c828a939",
+    "decoded_size": 269584
+   },
+   "header_changes": []
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_ad02_stc.lz",
+   "file_id": 2463,
+   "placement": "in_place",
+   "old": {
+    "start": "0x4DA000",
+    "end": "0x4ECBEA",
+    "size": 76778,
+    "sha256": "03569f87b5cadb0f7bdf653a226d749e5d48b9ff1cd39374d6e47b64d95dabfa",
+    "decoded_sha256": "5c581011896a2dd9d61af7a3f01cc0a5fa2697892507e01a1373f3b680155c0f",
+    "decoded_size": 261712
+   },
+   "new": {
+    "start": "0x4DA000",
+    "end": "0x4ECBEB",
+    "size": 76779,
+    "sha256": "feed588025f5dd2603b0761fd791e681d4baa39e6adb7cdc60d7da10ede3100c",
+    "decoded_sha256": "d4f9368d2326d94da88a5925c9bedc0df22e14564bbdd9852c853e703a7e9ea2",
+    "decoded_size": 261712
+   },
+   "header_changes": []
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_ad21_stc.lz",
+   "file_id": 2478,
+   "placement": "in_place",
+   "old": {
+    "start": "0x77A200",
+    "end": "0x78430B",
+    "size": 41227,
+    "sha256": "5bf389e9d52e34344da3a206be379c416715c433417de68416598c54e25a51f5",
+    "decoded_sha256": "d10b29038cbaa200d17b60d2c204f63cd6a0d1af7388c669ce32140cc3655f5b",
+    "decoded_size": 157792
+   },
+   "new": {
+    "start": "0x77A200",
+    "end": "0x784310",
+    "size": 41232,
+    "sha256": "cb31e1df2a76a30d5caa631a98b7d8efe3fe2b50e7d51db0f48af814222cc5c4",
+    "decoded_sha256": "2784cdcbe9952883a524de0c3e5afc4210901b461f341d4694f34327a362f12f",
+    "decoded_size": 157792
+   },
+   "header_changes": []
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_be02_stc.lz",
+   "file_id": 2489,
+   "placement": "in_place",
+   "old": {
+    "start": "0xDD0800",
+    "end": "0xDDDE1D",
+    "size": 54813,
+    "sha256": "72582a1fd909df4806ed2b42ea32970787094d4f48c4a217ec669d18cb6225bc",
+    "decoded_sha256": "77e7d0bff2421fd05fd4483e2188cada3df8480fc9ae4eaa903499a18fcc74f0",
+    "decoded_size": 219888
+   },
+   "new": {
+    "start": "0xDD0800",
+    "end": "0xDDDE1D",
+    "size": 54813,
+    "sha256": "a9a9a82ef649cd834ab4bdca0b3ae8d0348cf578b7b6915816c1d10d66e384e4",
+    "decoded_sha256": "750d08f9b031998f8a1706e7daadc01edfa40763f7258841a3eb80265b148029",
+    "decoded_size": 219888
+   },
+   "header_changes": []
+  }
+ ],
+ "plan_schema": "trcore.edit_plan/1",
+ "stage_edits": [
+  {
+   "file": "stcoli/smb1_be01_stc.lz",
+   "stage_key": "smb1_be01",
+   "where": "World 1-1 Elementary",
+   "decoded_size": 85296,
+   "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+   "decoded_sha256_after": "87cb2f647c5d86e027919fcfe00612594d2074aa5e036ad712f9002b984fab0c",
+   "edits": [
+    {
+     "target": "pool_A[0].u32_30",
+     "field_type": "u32",
+     "offset": "0x130",
+     "width": 4,
+     "old_raw": "00 00 00 00",
+     "new_raw": "01 00 00 00",
+     "old_value": [
+      0
+     ],
+     "new_value": [
+      1
+     ],
+     "unchanged": false,
+     "prediction": "The goal is RED instead of the normal colour. (Converse of W8-1 below.)",
+     "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+     "decoded_sha256_after": "87cb2f647c5d86e027919fcfe00612594d2074aa5e036ad712f9002b984fab0c"
+    }
+   ]
+  },
+  {
+   "file": "stcoli/smbds_023_stc.lz",
+   "stage_key": "smbds_023",
+   "where": "World 1-2 Sine Wave",
+   "decoded_size": 184992,
+   "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+   "decoded_sha256_after": "ebd09312e8adb9da910c30d3736f7284480a9afada6698d3d45bb02416de9a10",
+   "edits": [
+    {
+     "target": "start[0].position",
+     "field_type": "q12",
+     "offset": "0xE4",
+     "width": 12,
+     "old_raw": "00 00 00 00 00 00 00 00 00 60 02 00",
+     "new_raw": "00 00 00 00 00 00 00 00 00 30 02 00",
+     "old_value": [
+      0.0,
+      0.0,
+      38.0
+     ],
+     "new_value": [
+      0.0,
+      0.0,
+      35.0
+     ],
+     "unchanged": false,
+     "prediction": "The ball starts 3 units further forward along the path (closer to the first banana), facing the same way.",
+     "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+     "decoded_sha256_after": "ebd09312e8adb9da910c30d3736f7284480a9afada6698d3d45bb02416de9a10"
+    }
+   ]
+  },
+  {
+   "file": "stcoli/smb1_be06_stc.lz",
+   "stage_key": "smb1_be06",
+   "where": "World 1-3 Curvature",
+   "decoded_size": 269584,
+   "decoded_sha256_before": "30b104f9246bf679f04e49d376ab145a0b55244c2b6b584dc1e197e9f5505d8e",
+   "decoded_sha256_after": "39f9d3fc1c2a2f13dd8574c84f3e74f2efb9bf62193c2185157709a0c828a939",
+   "edits": [
+    {
+     "target": "pool_A[0].matrix",
+     "field_type": "q12",
+     "offset": "0x100",
+     "width": 36,
+     "old_raw": "00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 10 00 00",
+     "new_raw": "00 00 00 00 00 00 00 00 00 f0 ff ff 00 00 00 00 00 10 00 00 00 00 00 00 00 10 00 00 00 00 00 00 00 00 00 00",
+     "old_value": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ],
+     "new_value": [
+      0.0,
+      0.0,
+      -1.0,
+      0.0,
+      1.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0
+     ],
+     "unchanged": false,
+     "prediction": "The goal is turned 90 degrees: it stands sideways to the path, and its front (the side you normally roll through) faces to the RIGHT as you approach. It may be impossible to finish.",
+     "decoded_sha256_before": "30b104f9246bf679f04e49d376ab145a0b55244c2b6b584dc1e197e9f5505d8e",
+     "decoded_sha256_after": "39f9d3fc1c2a2f13dd8574c84f3e74f2efb9bf62193c2185157709a0c828a939"
+    }
+   ]
+  },
+  {
+   "file": "stcoli/smb1_ad02_stc.lz",
+   "stage_key": "smb1_ad02",
+   "where": "World 5-2 Sword",
+   "decoded_size": 261712,
+   "decoded_sha256_before": "5c581011896a2dd9d61af7a3f01cc0a5fa2697892507e01a1373f3b680155c0f",
+   "decoded_sha256_after": "d4f9368d2326d94da88a5925c9bedc0df22e14564bbdd9852c853e703a7e9ea2",
+   "edits": [
+    {
+     "target": "pool_B[0].translation",
+     "field_type": "q12",
+     "offset": "0x164",
+     "width": 12,
+     "old_raw": "00 00 00 00 00 00 00 00 00 70 fe ff",
+     "new_raw": "00 20 00 00 00 00 00 00 00 70 fe ff",
+     "old_value": [
+      0.0,
+      0.0,
+      -25.0
+     ],
+     "new_value": [
+      2.0,
+      0.0,
+      -25.0
+     ],
+     "unchanged": false,
+     "prediction": "In the diamond of bumpers, the front bumper (the one nearest the start) is shifted 2 units to the RIGHT (seen from the start); the other 8 bumpers are unchanged.",
+     "decoded_sha256_before": "5c581011896a2dd9d61af7a3f01cc0a5fa2697892507e01a1373f3b680155c0f",
+     "decoded_sha256_after": "d4f9368d2326d94da88a5925c9bedc0df22e14564bbdd9852c853e703a7e9ea2"
+    }
+   ]
+  },
+  {
+   "file": "stcoli/smb1_ad21_stc.lz",
+   "stage_key": "smb1_ad21",
+   "where": "World 5-6 Conveyor",
+   "decoded_size": 157792,
+   "decoded_sha256_before": "d10b29038cbaa200d17b60d2c204f63cd6a0d1af7388c669ce32140cc3655f5b",
+   "decoded_sha256_after": "2784cdcbe9952883a524de0c3e5afc4210901b461f341d4694f34327a362f12f",
+   "edits": [
+    {
+     "target": "pool_B[0].translation",
+     "field_type": "q12",
+     "offset": "0x164",
+     "width": 12,
+     "old_raw": "00 00 01 00 66 fe ff ff 00 40 00 00",
+     "new_raw": "00 00 01 00 66 0e 00 00 00 40 00 00",
+     "old_value": [
+      16.0,
+      -0.10009765625,
+      4.0
+     ],
+     "new_value": [
+      16.0,
+      0.89990234375,
+      4.0
+     ],
+     "unchanged": false,
+     "prediction": "Exactly one of the moving bumpers floats about 1 unit higher than the others but still moves along with them (it belongs to moving group MOT_bumper01).",
+     "decoded_sha256_before": "d10b29038cbaa200d17b60d2c204f63cd6a0d1af7388c669ce32140cc3655f5b",
+     "decoded_sha256_after": "2784cdcbe9952883a524de0c3e5afc4210901b461f341d4694f34327a362f12f"
+    }
+   ]
+  },
+  {
+   "file": "stcoli/smb1_be02_stc.lz",
+   "stage_key": "smb1_be02",
+   "where": "World 8-1 Hollow Diamond",
+   "decoded_size": 219888,
+   "decoded_sha256_before": "77e7d0bff2421fd05fd4483e2188cada3df8480fc9ae4eaa903499a18fcc74f0",
+   "decoded_sha256_after": "750d08f9b031998f8a1706e7daadc01edfa40763f7258841a3eb80265b148029",
+   "edits": [
+    {
+     "target": "pool_A[1].u32_30",
+     "field_type": "u32",
+     "offset": "0x164",
+     "width": 4,
+     "old_raw": "01 00 00 00",
+     "new_raw": "00 00 00 00",
+     "old_value": [
+      1
+     ],
+     "new_value": [
+      0
+     ],
+     "unchanged": false,
+     "prediction": "The secret goal (below and behind the start) is NOT red any more; the normal goal ahead is unchanged.",
+     "decoded_sha256_before": "77e7d0bff2421fd05fd4483e2188cada3df8480fc9ae4eaa903499a18fcc74f0",
+     "decoded_sha256_after": "750d08f9b031998f8a1706e7daadc01edfa40763f7258841a3eb80265b148029"
+    }
+   ]
+  }
+ ],
+ "status": "generated - not yet verified in-game"
+}

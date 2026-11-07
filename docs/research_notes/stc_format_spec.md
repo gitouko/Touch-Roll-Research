@@ -186,6 +186,8 @@ which files were swapped, and what was seen (screenshot if possible).
   (docs/research_notes/gate_2026-11-06/).
 * **Edit test 1 — PASSED (2026-11-06):** banana position, bunch flag, start angle and goal
   position confirmed in-game (§14, docs/experiments/edit1_world1/).
+* **Edit test 2 (pending):** red-goal flag both ways, goal rotation (matrix convention), start position,
+  bumper position, object inside a moving group (docs/experiments/edit2_bumpers_goals/).
 * **Q6 — Collision tables:** decode `smb1_be01` (one group, simple geometry) against its model.
 * **Q7 — Meaning of 0x0C, 0x10, 0x34, `box2`, descriptor +0x58…+0x70.**
 
