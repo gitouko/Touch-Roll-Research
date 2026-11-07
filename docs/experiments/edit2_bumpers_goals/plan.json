@@ -1,0 +1,123 @@
+{
+ "schema": "trcore.edit_plan/1",
+ "title": "Edit test 2: goal flag both ways, goal rotation, start position, bumper, object in a moving group",
+ "base_rom_sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17",
+ "stages": [
+  {
+   "stage_key": "smb1_be01",
+   "where": "World 1-1 Elementary",
+   "edits": [
+    {
+     "target": "pool_A[0].u32_30",
+     "from": 0,
+     "to": 1,
+     "prediction": "The goal is RED instead of the normal colour. (Converse of W8-1 below.)"
+    }
+   ]
+  },
+  {
+   "stage_key": "smbds_023",
+   "where": "World 1-2 Sine Wave",
+   "edits": [
+    {
+     "target": "start[0].position",
+     "from": [
+      0.0,
+      0.0,
+      38.0
+     ],
+     "to": [
+      0.0,
+      0.0,
+      35.0
+     ],
+     "prediction": "The ball starts 3 units further forward along the path (closer to the first banana), facing the same way."
+    }
+   ]
+  },
+  {
+   "stage_key": "smb1_be06",
+   "where": "World 1-3 Curvature",
+   "edits": [
+    {
+     "target": "pool_A[0].matrix",
+     "from": [
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0,
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ],
+     "to": [
+      0,
+      0,
+      -1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      0
+     ],
+     "prediction": "The goal is turned 90 degrees: it stands sideways to the path, and its front (the side you normally roll through) faces to the RIGHT as you approach. It may be impossible to finish."
+    }
+   ]
+  },
+  {
+   "stage_key": "smb1_ad02",
+   "where": "World 5-2 Sword",
+   "edits": [
+    {
+     "target": "pool_B[0].translation",
+     "from": [
+      0.0,
+      0.0,
+      -25.0
+     ],
+     "to": [
+      2.0,
+      0.0,
+      -25.0
+     ],
+     "prediction": "In the diamond of bumpers, the front bumper (the one nearest the start) is shifted 2 units to the RIGHT (seen from the start); the other 8 bumpers are unchanged."
+    }
+   ]
+  },
+  {
+   "stage_key": "smb1_ad21",
+   "where": "World 5-6 Conveyor",
+   "edits": [
+    {
+     "target": "pool_B[0].translation",
+     "from": [
+      16.0,
+      -0.10009765625,
+      4.0
+     ],
+     "to": [
+      16.0,
+      0.89990234375,
+      4.0
+     ],
+     "prediction": "Exactly one of the moving bumpers floats about 1 unit higher than the others but still moves along with them (it belongs to moving group MOT_bumper01)."
+    }
+   ]
+  },
+  {
+   "stage_key": "smb1_be02",
+   "where": "World 8-1 Hollow Diamond",
+   "edits": [
+    {
+     "target": "pool_A[1].u32_30",
+     "from": 1,
+     "to": 0,
+     "prediction": "The secret goal (below and behind the start) is NOT red any more; the normal goal ahead is unchanged."
+    }
+   ]
+  }
+ ]
+}
