@@ -1,6 +1,6 @@
 # Edit test 3 — adding, removing and relisting objects
 
-**Status:** generated 2026-11-07, waiting for the in-game test.
+**Status: PASSED (2026-11-07).** All seven predictions were observed in-game, including the control (C), and the game's memory held exactly the edited stage files.
 
 * ROM copy: `TR_edit3_add_remove.nds`, SHA-1 `ebddb91593acc12c39cab9e040bd64d0372629ff`, built from the
   original (SHA-1 `3b0bf7f4…`) by `py -3 -m trcore stage-edit <original> TR_edit3_add_remove.nds plan.json`.
@@ -37,4 +37,34 @@ selected), `edit3_smbds_023_map.png` (banana D selected, C just below it), `edit
 
 ## Results
 
-_Pending._
+Played by the project owner in BizHawk 2.11.1 on `TR_edit3_add_remove.nds` (SHA-1 `ebddb915…`).
+
+| # | Owner's observation |
+|---|---|
+| A | banana 5 beside the goal is gone; the other four can still be collected |
+| B | the new banana between the start and banana 1 can be collected |
+| G | the second goal 4.5 units ahead of the start clears the stage when rolled into |
+| C | the ball rolls through the banana 5 units ahead of the start without collecting it |
+| D | the banana just past C is collected (counter +1 for the pair) |
+| E | the new bumper in front of the diamond bounces the ball |
+| F | the diamond's back tip bumper is gone |
+
+Memory (`results/`): every word of the in-memory stage equals the edited file, apart from the offsets
+the game turns into pointers. Those now include the newly appended cell arrays and lists, so the game
+walked the new data.
+
+| Dump | Stage | Size | Result |
+|---|---|---|---|
+| stage 0, frame 4407 | smb1_be01 (W1-1) | 88,688 bytes (was 85,296) | 21,213 equal, 959 offset→pointer (was 843), **0 other** |
+| stage 119, frame 7915 | smbds_023 (W1-2) | 187,832 (was 184,992) | 40,875 equal, 6,083 offset→pointer, **0 other** |
+| stage 11, frame 10243 | smb1_ad02 (W5-2) | 265,472 (was 261,712) | 61,227 equal, 5,141 offset→pointer, **0 other** |
+
+### Conclusions (Level 4)
+
+* Pools may be rebuilt **at the end of the stage file**: with slices and header totals updated, the game
+  uses the new array. The old bytes are simply ignored. Stage files may grow (≥ 3.7 KB tested).
+* Adding a banana, a goal and a bumper, and removing a banana and a bumper, all work in group 0.
+* **The collision cell lists decide what the ball can touch.** A banana moved out of its cells without
+  updating them (C) cannot be collected. One moved the same way with its lists rebuilt (D) can.
+* A second normal goal works as a goal.
+* Not tested yet: objects in moving parts (add, remove, far moves) and red goals added from scratch.

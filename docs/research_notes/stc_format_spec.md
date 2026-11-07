@@ -393,6 +393,12 @@ of the slice counts. Where the array sits in the file does not matter.
   * 68 more differ by one row or column of cells at the edge.
   * 2 goals on moving parts differ more.
 
+**Confirmed in-game by edit test 3 (2026-11-07, Level 4):**
+* a banana moved out of its cells without updating them cannot be collected, and the same move with its
+  lists rebuilt can;
+* pools rebuilt at the end of a grown stage file, with slices and totals updated, work for adding and
+  removing bananas, goals and bumpers in group 0.
+
 **Consequence for editing:** moving an object changes only its record, not its cell lists. A move
 that leaves the cells listing it (roughly more than 2 units for bananas) leaves the object where
 the ball never checks it. Editor 0.1.1 warns about such moves. Adding, removing or freely moving

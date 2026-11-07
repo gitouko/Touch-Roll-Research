@@ -154,6 +154,14 @@ IN_GAME = {
     "E13": "objects in a moving group are placed in its frame and move with it: edit test 2, W5-6; "
            "matrices are applied transposed (world = M^T * local), goal front = local +z: edit test 2, W1-3",
 }
+IN_GAME.update({
+    "E22": "stage files may grow: pools, lists and cell arrays appended at the end are loaded and relocated: "
+           "edit test 3",
+    "E23": "the ball only touches objects listed in its cell (control banana not collectable; same move with "
+           "lists rebuilt collectable): edit test 3, W1-2",
+    "E24": "pools rebuilt contiguously at the end with slices and totals updated: banana/goal/bumper added, "
+           "banana/bumper removed, all working: edit test 3, W1-1 and W5-2",
+})
 IN_GAME["E05"] += "; start +0x00 = start position: edit test 2, W1-2"
 IN_GAME["E07"] += "; pool A +0x00 = goal orientation (applied transposed): edit test 2, W1-3"
 for _k, _v in IN_GAME.items():
