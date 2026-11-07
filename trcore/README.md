@@ -77,8 +77,9 @@ would change or the stage's parsed structure would differ. Each run writes a new
 
 ## Non-goals of this version
 
-No adding/removing objects, no GUI, no collision decoding. Field labels ("goal",
-"banana", …) are hypotheses unless the spec says otherwise; see
+No adding/removing objects, no GUI, no collision decoding. Field meanings are confirmed only where
+the spec's §14 lists an in-game test (start, goals incl. red flag, bumper position, bananas incl. bunch);
+see
 `docs/research_notes/stc_format_spec.md` for the evidence and the experiments that confirm them.
 
 ## Layout
@@ -92,7 +93,7 @@ trcore/editplan.py      JSON edit plan -> new ROM copy + patch record
 trcore/ramdump.py       compare a BizHawk Main RAM dump with the expected stage file
 trcore/binreader.py     bounds-checked LE reads, Q20.12
 trcore/assets.py        content classification, name parsing, corpus index
-trcore/stc/layout.py    layout constants + evidence registry (E01..E20)
+trcore/stc/layout.py    layout constants + evidence registry (E01..E21, in-game confirmations)
 trcore/stc/document.py  StageDocument: views, pools, groups, variants, coverage, checks
 trcore/report.py        deterministic JSON/Markdown, safe output writer
 trcore/cli.py           command line
