@@ -404,3 +404,53 @@ that leaves the cells listing it (roughly more than 2 units for bananas) leaves 
 the ball never checks it. Editor 0.1.1 warns about such moves. Adding, removing or freely moving
 objects needs the lists rebuilt (Milestone 3).
 
+## 17. Collision geometry (Milestone 4 research)
+
+From the game's ball-collision code (ARM9, USA rev 0), checked against all 120 main-game stages
+(Level 2). Reproduce with `py -3 -m trcore collision "<ROM>.nds" --main-only`. Reader:
+`trcore/stc/collision.py`.
+
+### 17.1 The four tables (per group) and what the ball does with them
+
+| Cell bit | Count / offset | Record | Kind | Game code |
+|---|---|---|---|---|
+| 0 | `+0x8C` / `+0x90` | 0x34 | **quad** (parallelogram) | 0x02046460 |
+| 1 | `+0x84` / `+0x88` | 0x34 | **triangle** | 0x02046050 |
+| 2 | `+0x7C` / `+0x80` | 0x20 | **edge** | 0x02045DE0 |
+| 3 | `+0x74` / `+0x78` | 0x10 | **corner point** | 0x02045C1C |
+
+* **Face record:** `+0x00` u32 (always 0), `+0x04` corner P, `+0x10` unit normal N, `+0x1C` E1, `+0x28` E2
+  (all Q20.12). E1 and E2 are dual vectors: for a contact point Q, u = (Q−P)·E1 and v = (Q−P)·E2. The
+  point is on a triangle if u ≥ 0, v ≥ 0 and u + v ≤ 1, and on a quad if 0 ≤ u, v ≤ 1. The ball must come
+  from the front (the side N points to) and be within its radius of the plane.
+  * The corners follow from P, N, E1, E2: P, P + A, P + B (and P + A + B for quads), where A·E1 = 1,
+    A·E2 = 0, A·N = 0 and B likewise.
+  * In every main-game face, N has the same sign as (P1 − P) × (P2 − P), and the stored vectors equal
+    the recomputed ones to within 2/4096 (98%). `dual_vectors()` encodes new faces the same way.
+* **Edge record:** `+0x00` start A, `+0x0C` unit direction D, `+0x18` length L, `+0x1C` u32 (always 0). The
+  ball touches it between t = 0 and t = L along D.
+* **Corner point record:** `+0x00` point, `+0x0C` u32 (always 0). It is the rounded collision at corners.
+* Ball data used: position `+0x2C`, previous position `+0x38`, radius `+0x28`. The response routine is
+  0x02046858 (contact point plus normal).
+* Main-game totals: 29,981 quads, 63,766 triangles, 170,428 edges and 79,189 corner points. Descriptor
+  `+0xAC` (the relocated tree) is 0 in every main-game group.
+
+### 17.2 Where collision comes from: the visible model
+
+* 96% of collision faces have every corner within 0.02 of a corner of the stage model at rest
+  (28,654 / 29,981 quads, 61,932 / 63,766 triangles).
+* Model quads that are parallelograms become collision quads (28,188 of 29,681). The others are split
+  into two triangles. The diagonal does not follow a simple rule (probably the source mesh's own
+  triangulation). Model triangles stay triangles.
+* Edges: nearly every edge between two faces (convex, concave or flat) and most outer edges have an edge
+  record. Corner points: 98% of corners where faces meet at an angle, and 65% of flat ones.
+* Cell lists for bits 0–3 follow the object rule (§16.3) with the piece's own x/z extent plus **0.5**,
+  the ball's radius:
+  * exact for 28,346 quads, 61,655 triangles, 164,877 edges and 76,817 points (96–97%);
+  * with extent + 0.75, every piece except one quad is within the computed cells.
+
+**Consequence for collision editing and platforms:** collision can be generated from geometry with
+these rules, and existing collision can be kept exactly for untouched geometry. A platform is model
+polygons plus the collision generated from them, added to one group's tables and lists. The proposed
+in-game test is in `docs/research_notes/m4_collision_platforms.md`.
+

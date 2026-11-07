@@ -346,6 +346,27 @@ def cmd_cells(args) -> int:
     return 0
 
 
+def cmd_collision(args) -> int:
+    from collections import Counter
+    from .stagemodel import load_stage_model
+    from .stc.collision import survey_stage as coll_survey
+    rom = _load_rom(args.rom)
+    keys = [s["stage_key"] for w in rom.stage_map()["worlds"] for s in w["stages"]] if args.main_only else \
+        sorted(p[len("stcoli/"):-len("_stc.lz")] for p in rom.id_by_path if p.startswith("stcoli/"))
+    total = Counter()
+    for k in keys:
+        sm = load_stage_model(rom, k)
+        total.update(coll_survey(rom.stage_file_decoded(k), sm["triangles"] if sm else None))
+    _p(f"stages: {len(keys)}" + (" (main game)" if args.main_only else " (all stage files)"))
+    for k, v in sorted(total.items()):
+        _p(f"  {k}: {v}")
+    if args.out:
+        w = R.OutputWriter(args.out, [])
+        w.write_text("collision_survey.json", R.dumps({"schema": "trcore.collision_survey/1", "main_only": args.main_only,
+                                                       "stages": len(keys), "counts": dict(sorted(total.items()))}))
+    return 0
+
+
 def _source_bytes(path: str) -> bytes:
     from . import lz10
     with open(path, "rb") as fh:
@@ -503,6 +524,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--main-only", action="store_true", help="only the 120 stages used by the 12 worlds")
     p.add_argument("--out", help="directory for cell_survey.json")
     p.set_defaults(func=cmd_cells)
+    p = sub.add_parser("collision", help="decode every stage's collision geometry and check it against the rules")
+    p.add_argument("rom")
+    p.add_argument("--main-only", action="store_true", help="only the 120 stages used by the 12 worlds")
+    p.add_argument("--out", help="directory for collision_survey.json")
+    p.set_defaults(func=cmd_collision)
     p = sub.add_parser("rom-replace", help="write a NEW ROM copy with one NitroFS file replaced")
     p.add_argument("rom", help="input ROM (never modified)")
     p.add_argument("out", help="new output .nds path (must not exist)")

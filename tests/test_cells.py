@@ -91,3 +91,35 @@ class RealCells(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class CollisionReader(unittest.TestCase):
+    def test_face_round_trip(self):
+        from trcore.stc.collision import dual_vectors, face_corners
+        p, v1, v2 = (1.0, 2.0, 3.0), (4.0, 2.0, 3.0), (1.0, 2.5, 1.0)
+        n, e1, e2 = dual_vectors(p, v1, v2)
+        got = face_corners(p, n, e1, e2, quad=False)
+        for a, b in zip(got, (p, v1, v2)):
+            for x, y in zip(a, b):
+                self.assertAlmostEqual(x, y)
+        quad = face_corners(p, n, e1, e2, quad=True)
+        self.assertAlmostEqual(quad[2][0], 4.0)
+        self.assertAlmostEqual(quad[2][2], 1.0)
+
+    @unittest.skipUnless(REAL_ROM and os.path.exists(REAL_ROM), "set TRCORE_ROM to the Touch & Roll ROM")
+    def test_real_collision_rules(self):
+        from collections import Counter
+        from trcore.rom import NdsRom
+        from trcore.stagemodel import load_stage_model
+        from trcore.stc.collision import survey_stage
+        rom = NdsRom.from_file(REAL_ROM)
+        total = Counter()
+        for key in ("smb1_be01", "smb1_ad02", "smb1_ad21", "smbds_023"):
+            sm = load_stage_model(rom, key)
+            total.update(survey_stage(rom.stage_file_decoded(key), sm["triangles"]))
+        for kind in ("quads", "triangles", "edges", "points"):
+            self.assertGreater(total[kind], 0)
+            self.assertEqual(total.get(f"{kind} in no cell", 0), 0)
+            self.assertGreaterEqual(total[f"{kind}: cells within the 0.75 rule"], total[kind] - 1)
+            self.assertFalse(total.get(f"{kind} with a nonzero spare word"))
+        self.assertGreater(total["quads with every corner within 0.02 of a model corner"] / total["quads"], 0.9)
