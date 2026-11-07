@@ -8,7 +8,9 @@ trcore.editplan.build_edit_rom (verified ROM copy + patch record).
 
 Only fields whose meaning was confirmed in-game (evidence Level 4) can be
 changed: start position and facing, goal position / facing / red flag, bumper
-position, banana position / bunch flag.
+position, banana position / bunch flag. Goals, bumpers and bananas can be added
+(to the stage's fixed part), deleted and moved anywhere inside the collision grid;
+those changes go through trcore.stc.objects (edit test 3).
 """
 from __future__ import annotations
 
@@ -19,7 +21,7 @@ import os
 from typing import Dict, List, Optional, Tuple
 
 from trcore import lz10
-from trcore.editplan import PLAN_SCHEMA, build_edit_rom
+from trcore.editplan import PLAN_SCHEMA, PLAN_SCHEMA_V2, build_edit_rom
 from trcore.nitro.nsbmd import NitroError
 from trcore.rom import NdsRom, RomError
 from trcore.romwrite import RomWriteRefused, patch_record_path
@@ -27,6 +29,7 @@ from trcore.stagemodel import group_kinds, load_stage_model
 from trcore.stc.cells import KIND_POOL, CellError, coverage_problem, read_grids
 from trcore.stc.document import StageDocument
 from trcore.stc.edit import EditRefused, apply_edits
+from trcore.stc.objects import MAX_BANANA_VALUE, ObjectEditRefused, apply_object_ops
 
 FX = 4096
 ANGLE_FULL = 0x10000
@@ -39,6 +42,7 @@ KINDS = {
     "banana": ("pool", "C", "position", "position"),
 }
 TARGET_PREFIX = {"start": "start", "goal": "pool_A", "bumper": "pool_B", "banana": "pool_C"}
+PREFIX_KIND = {v: k for k, v in TARGET_PREFIX.items()}
 FLAG_TARGET = {("goal", "red"): "u32_30", ("banana", "bunch"): "u32_0C"}
 
 
@@ -83,8 +87,43 @@ def _q(v: float) -> int:
 
 # --------------------------------------------------------------------------- stage state
 
+OBJECT_KINDS = ("goal", "bumper", "banana")
+POS_FIELD = {"goal": "translation", "bumper": "translation", "banana": "position"}
+KIND_TITLE = {"start": "Start", "goal": "Goal", "bumper": "Bumper", "banana": "Banana"}
+DEFAULT_HEIGHT = {"banana": 0.5, "bumper": 0.0, "goal": 0.0}
+IDENTITY_ROWS = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
+
+
+def _empty_state() -> dict:
+    return {"fields": {}, "positions": {}, "deleted": [], "added": []}
+
+
+def _copy_state(st: dict) -> dict:
+    return {"fields": dict(st["fields"]), "positions": dict(st["positions"]), "deleted": list(st["deleted"]),
+            "added": [dict(a) for a in st["added"]]}
+
+
+def _split_id(oid: str) -> Tuple[str, Optional[int], Optional[str]]:
+    """'banana:3' -> ('banana', 3, None); 'banana:n2' -> ('banana', None, 'banana:n2')."""
+    kind, rest = oid.split(":", 1)
+    if kind not in KINDS:
+        raise EditorError(f"unknown object {oid!r}")
+    if rest.startswith("n"):
+        return kind, None, oid
+    return kind, int(rest), None
+
+
 class StageState:
-    """One stage: original bytes, current edits (target -> raw values), and the re-parsed document."""
+    """One stage: original bytes, the editing state, and the bytes/document rebuilt from it.
+
+    State (plain data, snapshotted for undo):
+      fields    {target: raw}   start fields and non-position fields of original objects
+      positions {id: raw xyz}   moved original goals / bumpers / bananas
+      deleted   [id]            removed original objects
+      added     [{id, kind, group, pos, bunch, red, matrix}]   new objects (group 0)
+    A moved original object stays a plain field edit while its original collision cells still cover it,
+    and is re-listed (trcore.stc.objects "move") otherwise; additions and removals always go through
+    trcore.stc.objects. The current bytes are always rebuilt from the original."""
 
     def __init__(self, project: "Project", entry: dict):
         self.project = project
@@ -94,13 +133,17 @@ class StageState:
         self.original_doc = StageDocument(self.original, self.key)
         if self.original_doc.has_errors():
             raise EditorError(f"{self.key}: stage file has structural errors; it can be viewed only with trcore")
-        self.edits: Dict[str, Tuple[int, ...]] = {}
+        self.state = _empty_state()
         self.current = self.original
         self.doc = self.original_doc
+        self.order: Dict[str, List[str]] = {}
+        self._field_edits: List[dict] = []
+        self._ops: List[dict] = []
         self._model = None
         self.model_error = None
         self._kinds = None
         self._grids = None
+        self._compute_order(self.state)
 
     # ---- model outline (read once)
     @property
@@ -120,100 +163,6 @@ class StageState:
             self._kinds = group_kinds(self.original_doc, m["model"] if m else None)
         return self._kinds
 
-    # ---- raw field access
-    def _record(self, kind: str, index: int, doc: Optional[StageDocument] = None) -> dict:
-        doc = doc or self.doc
-        src, pool, _f, _t = KINDS[kind]
-        recs = (doc.start or {}).get("records", []) if src == "start" else doc.pools.get(pool, {}).get("records", [])
-        if not 0 <= index < len(recs):
-            raise EditorError(f"{kind} {index} does not exist")
-        return recs[index]
-
-    def original_raw(self, target: str) -> Tuple[int, ...]:
-        return self._raw_from_doc(target, self.original_doc)
-
-    def current_raw(self, target: str) -> Tuple[int, ...]:
-        return self.edits.get(target) or self.original_raw(target)
-
-    def _raw_from_doc(self, target: str, doc: StageDocument) -> Tuple[int, ...]:
-        prefix, rest = target.split("[", 1)
-        idx, field = rest.split("].")
-        kind = {v: k for k, v in TARGET_PREFIX.items()}[prefix]
-        rec = self._record(kind, int(idx), doc)
-        if field in ("position", "translation"):
-            return tuple(_q(v) for v in rec[field])
-        if field == "matrix":
-            return tuple(_q(v) for row in rec["matrix"] for v in row)
-        return (rec[field],)
-
-    def plan_edits(self, edits: Optional[Dict[str, Tuple[int, ...]]] = None) -> List[dict]:
-        out = []
-        for target, raw in sorted((edits if edits is not None else self.edits).items()):
-            orig = self.original_raw(target)
-            if raw == orig:
-                continue
-            field = target.rsplit(".", 1)[1]
-            if field in ("position", "translation", "matrix"):
-                out.append({"target": target, "from": [v / FX for v in orig], "to": [v / FX for v in raw]})
-            else:
-                out.append({"target": target, "from": orig[0], "to": raw[0]})
-        return out
-
-    def _rebuild(self, edits: Dict[str, Tuple[int, ...]]):
-        clean = {t: v for t, v in edits.items() if v != self.original_raw(t)}
-        if not clean:
-            return clean, self.original, self.original_doc
-        try:
-            new, _recs = apply_edits(self.original, self.plan_edits(clean), self.key)
-        except EditRefused as exc:
-            raise EditorError(str(exc)) from None
-        return clean, new, StageDocument(new, self.key)
-
-    def set_raw(self, changes: Dict[str, Tuple[int, ...]]):
-        edits = dict(self.edits)
-        edits.update(changes)
-        self.edits, self.current, self.doc = self._rebuild(edits)
-
-    # ---- object view for the GUI
-    def objects(self) -> List[dict]:
-        out = []
-        kinds = self.group_kinds
-        names = {g["index"]: g.get("name_text_04") for g in self.doc.groups}
-        for kind in ("start", "goal", "bumper", "banana"):
-            src, pool, pfield, _t = KINDS[kind]
-            recs = (self.doc.start or {}).get("records", []) if src == "start" \
-                else self.doc.pools.get(pool, {}).get("records", [])
-            for rec in recs:
-                i = rec["index"]
-                grp = 0 if kind == "start" else rec["group"]
-                o = {"id": f"{kind}:{i}", "kind": kind, "index": i, "group": grp,
-                     "group_name": names.get(grp), "group_kind": kinds.get(grp),
-                     "in_moving_group": bool(grp), "position": list(rec[pfield]),
-                     "editable": {"position"}, "heading": None, "offset": rec["offset"]}
-                prefix = TARGET_PREFIX[kind]
-                o["changed"] = any(t.startswith(f"{prefix}[{i}].") for t in self.edits)
-                if kind == "start":
-                    o["heading"] = angle_to_degrees(rec["u32_0C"])
-                    o["editable"].add("heading")
-                elif kind == "goal":
-                    o["heading"] = goal_heading(rec["matrix"])
-                    o["matrix"] = rec["matrix"]
-                    o["red"] = rec["u32_30"] == 1
-                    o["editable"].add("red")
-                    if o["heading"] is not None and goal_heading(self._record("goal", i, self.original_doc)["matrix"]) is not None:
-                        o["editable"].add("heading")
-                elif kind == "bumper":
-                    o["matrix"] = rec["matrix"]
-                elif kind == "banana":
-                    o["bunch"] = rec["u32_0C"] == 1
-                    o["editable"].add("bunch")
-                o["collision_warning"] = None
-                if kind != "start" and o["changed"]:
-                    o["collision_warning"] = self.collision_warning(kind, i, o["position"])
-                out.append(o)
-        return out
-
-    # ---- collision lists (read from the ORIGINAL stage: position edits do not change them yet)
     @property
     def grids(self):
         if self._grids is None:
@@ -223,46 +172,257 @@ class StageState:
                 self._grids = []
         return self._grids
 
-    def collision_warning(self, kind: str, index: int, position) -> Optional[str]:
-        """Warn when a moved goal, bumper or banana leaves the cells the game checks it in."""
-        recs = self.original_doc.pools[KIND_POOL[kind]]["records"]
-        rec = recs[index]
-        g = rec["group"]
-        if not self.grids or g >= len(self.grids):
-            return None
-        local = sum(1 for r in recs[:index] if r["group"] == g)
-        orig = rec["translation" if kind != "banana" else "position"]
-        if [_q(v) for v in position] == [_q(v) for v in orig]:
-            return None
-        return coverage_problem(self.grids[g], kind, local, position, orig)
+    def can_restructure(self) -> Optional[str]:
+        """None if objects can be added / removed / re-listed in this stage, else the reason."""
+        if self.original_doc.layout_variant != "common":
+            return "this stage file uses an unusual layout"
+        if not self.grids or not self.grids[0].present:
+            return "this stage's collision cells could not be read"
+        return None
 
-    def changes_for(self, obj_id: str, prop: str, value) -> Dict[str, Tuple[int, ...]]:
-        """Translate a GUI property change into raw field values."""
-        kind, idx = obj_id.split(":")
-        i = int(idx)
-        prefix = TARGET_PREFIX[kind]
+    # ---- original records
+    def _record(self, kind: str, index: int, doc: Optional[StageDocument] = None) -> dict:
+        doc = doc or self.original_doc
+        src, pool, _f, _t = KINDS[kind]
+        recs = (doc.start or {}).get("records", []) if src == "start" else doc.pools.get(pool, {}).get("records", [])
+        if not 0 <= index < len(recs):
+            raise EditorError(f"{kind} {index} does not exist")
+        return recs[index]
+
+    def original_raw(self, target: str) -> Tuple[int, ...]:
+        prefix, rest = target.split("[", 1)
+        idx, field = rest.split("].")
+        kind = PREFIX_KIND[prefix]
+        rec = self._record(kind, int(idx))
+        if field in ("position", "translation"):
+            return tuple(_q(v) for v in rec[field])
+        if field == "matrix":
+            return tuple(_q(v) for row in rec["matrix"] for v in row)
+        return (rec[field],)
+
+    def original_position(self, kind: str, index: int) -> Tuple[int, int, int]:
+        return tuple(_q(v) for v in self._record(kind, index)[POS_FIELD[kind]])
+
+    def _covered(self, kind: str, index: int, pos_raw) -> bool:
+        """True if the object's ORIGINAL collision cells still cover pos_raw (or nothing can be re-listed)."""
+        if self.can_restructure():
+            return True
+        rec = self._record(kind, index)
+        g = rec["group"]
+        if g >= len(self.grids) or not self.grids[g].present:
+            return True
+        recs = self.original_doc.pools[KIND_POOL[kind]]["records"]
+        local = sum(1 for r in recs[:index] if r["group"] == g)
+        pos = [v / FX for v in pos_raw]
+        return coverage_problem(self.grids[g], kind, local, pos, rec[POS_FIELD[kind]]) is None
+
+    # ---- composing the state into field edits + object operations
+    @staticmethod
+    def _edit_entry(target: str, orig, raw) -> dict:
+        field = target.rsplit(".", 1)[1]
+        if field in ("position", "translation", "matrix"):
+            return {"target": target, "from": [v / FX for v in orig], "to": [v / FX for v in raw]}
+        return {"target": target, "from": orig[0], "to": raw[0]}
+
+    def _compose(self, state: dict) -> Tuple[List[dict], List[dict]]:
+        deleted = set(state["deleted"])
+        fields: Dict[str, Tuple[int, ...]] = {}
+        for t, v in state["fields"].items():
+            prefix, rest = t.split("[", 1)
+            kind = PREFIX_KIND[prefix]
+            if f"{kind}:{int(rest.split(']')[0])}" in deleted:
+                continue
+            if v != self.original_raw(t):
+                fields[t] = v
+        ops: List[dict] = []
+        for oid in sorted(deleted, key=lambda x: (x.split(":")[0], int(x.split(":")[1]))):
+            kind, i, _ = _split_id(oid)
+            ops.append({"op": "remove", "kind": kind, "index": i,
+                        "expect_position": [v / FX for v in self.original_position(kind, i)]})
+        for oid, pos in sorted(state["positions"].items()):
+            kind, i, _ = _split_id(oid)
+            if oid in deleted or tuple(pos) == self.original_position(kind, i):
+                continue
+            if self._covered(kind, i, pos):
+                fields[f"{TARGET_PREFIX[kind]}[{i}].{POS_FIELD[kind]}"] = tuple(pos)
+            else:
+                ops.append({"op": "move", "kind": kind, "index": i,
+                            "from": [v / FX for v in self.original_position(kind, i)],
+                            "to": [v / FX for v in pos]})
+        for a in state["added"]:
+            op = {"op": "add", "kind": a["kind"], "group": a["group"], "position": [v / FX for v in a["pos"]]}
+            if a["kind"] == "banana":
+                op["bunch"] = bool(a.get("bunch"))
+            if a["kind"] == "goal":
+                op["red"] = bool(a.get("red"))
+                op["matrix"] = [v / FX for v in a["matrix"]]
+            ops.append(op)
+        edits = [self._edit_entry(t, self.original_raw(t), v) for t, v in sorted(fields.items())]
+        return edits, ops
+
+    def _compute_order(self, state: dict):
+        """Stable ids of the records in the rebuilt pools, in pool order (mirrors trcore.stc.objects)."""
+        deleted = set(state["deleted"])
+        ngroups = len(self.original_doc.groups)
+        for kind in OBJECT_KINDS:
+            recs = self.original_doc.pools[KIND_POOL[kind]]["records"]
+            added = [a for a in state["added"] if a["kind"] == kind]
+            order = []
+            for g in range(ngroups):
+                order += [f"{kind}:{r['index']}" for r in recs if r["group"] == g and f"{kind}:{r['index']}" not in deleted]
+                order += [a["id"] for a in added if a["group"] == g]
+            self.order[kind] = order
+
+    def set_state(self, state: dict):
+        """Rebuild the stage from `state`; raises EditorError (and changes nothing) if it is refused."""
+        edits, ops = self._compose(state)
+        if ops and self.can_restructure():
+            raise EditorError(f"objects cannot be added, removed or moved far here: {self.can_restructure()}")
+        cur = self.original
+        try:
+            if edits:
+                cur, _ = apply_edits(cur, edits, self.key)
+            if ops:
+                cur, _ = apply_object_ops(cur, ops, self.key)
+        except (EditRefused, ObjectEditRefused) as exc:
+            raise EditorError(str(exc)) from None
+        doc = StageDocument(cur, self.key) if cur is not self.original else self.original_doc
+        value = banana_value(doc)
+        if value > MAX_BANANA_VALUE:
+            raise EditorError(f"the stage's banana value would be {value}; the game counts it in one byte "
+                              f"(at most {MAX_BANANA_VALUE}; a bunch counts 5)")
+        old_order = self.order
+        self._compute_order(state)
+        for kind in OBJECT_KINDS:
+            if len(self.order[kind]) != len(doc.pools[KIND_POOL[kind]]["records"]):
+                self.order = old_order
+                raise EditorError("internal: object order does not match the rebuilt stage")
+        self.state = _copy_state(state)
+        self.current, self.doc = cur, doc
+        self._field_edits, self._ops = edits, ops
+
+    # ---- what a plan / save contains
+    def plan_edits(self) -> List[dict]:
+        return list(self._field_edits)
+
+    def plan_ops(self) -> List[dict]:
+        return list(self._ops)
+
+    @property
+    def changed(self) -> bool:
+        return bool(self._field_edits or self._ops)
+
+    @property
+    def banana_value(self) -> int:
+        return banana_value(self.doc)
+
+    # ---- object view for the GUI
+    def objects(self) -> List[dict]:
+        out = []
+        kinds = self.group_kinds
+        names = {g["index"]: g.get("name_text_04") for g in self.doc.groups}
+        st = self.state
+        moved = {oid for oid, pos in st["positions"].items()
+                 if tuple(pos) != self.original_position(*_split_id(oid)[:2])}
+        field_objs = set()
+        for t in st["fields"]:
+            if st["fields"][t] != self.original_raw(t):
+                prefix, rest = t.split("[", 1)
+                field_objs.add(f"{PREFIX_KIND[prefix]}:{int(rest.split(']')[0])}")
+        new_number = {}
+        for kind in OBJECT_KINDS:
+            for n, a in enumerate([a for a in st["added"] if a["kind"] == kind]):
+                new_number[a["id"]] = n + 1
+        for kind in ("start",) + OBJECT_KINDS:
+            src, pool, pfield, _t = KINDS[kind]
+            recs = (self.doc.start or {}).get("records", []) if src == "start" \
+                else self.doc.pools.get(pool, {}).get("records", [])
+            ids = [f"start:{r['index']}" for r in recs] if kind == "start" else self.order[kind]
+            for rec, oid in zip(recs, ids):
+                _k, orig_i, new_id = _split_id(oid)
+                grp = 0 if kind == "start" else rec["group"]
+                is_new = new_id is not None
+                label = (f"New {KIND_TITLE[kind].lower()} {new_number.get(new_id, '?')}" if is_new
+                         else f"{KIND_TITLE[kind]} {orig_i + 1}")
+                o = {"id": oid, "kind": kind, "index": orig_i, "label": label, "new": is_new, "group": grp,
+                     "group_name": names.get(grp), "group_kind": kinds.get(grp), "in_moving_group": bool(grp),
+                     "position": list(rec[pfield]), "editable": {"position"}, "heading": None,
+                     "offset": rec["offset"], "collision_warning": None,
+                     "changed": is_new or oid in moved or oid in field_objs,
+                     "deletable": kind != "start" and not self.can_restructure()}
+                if kind == "start":
+                    o["heading"] = angle_to_degrees(rec["u32_0C"])
+                    o["editable"].add("heading")
+                elif kind == "goal":
+                    o["heading"] = goal_heading(rec["matrix"])
+                    o["matrix"] = rec["matrix"]
+                    o["red"] = rec["u32_30"] == 1
+                    o["editable"].add("red")
+                    base_m = IDENTITY_ROWS if is_new else self._record("goal", orig_i)["matrix"]
+                    if o["heading"] is not None and goal_heading(base_m) is not None:
+                        o["editable"].add("heading")
+                elif kind == "bumper":
+                    o["matrix"] = rec["matrix"]
+                elif kind == "banana":
+                    o["bunch"] = rec["u32_0C"] == 1
+                    o["editable"].add("bunch")
+                out.append(o)
+        return out
+
+    # ---- state changes (pure: return a new state)
+    def _added(self, state: dict, new_id: str) -> dict:
+        for a in state["added"]:
+            if a["id"] == new_id:
+                return a
+        raise EditorError(f"{new_id} does not exist")
+
+    def mutate(self, state: dict, obj_id: str, prop: str, value) -> dict:
+        kind, i, new_id = _split_id(obj_id)
+        st = _copy_state(state)
+        if obj_id in st["deleted"]:
+            raise EditorError(f"{obj_id} was deleted")
         if prop == "position":
-            field = KINDS[kind][3]
-            vals = tuple(_q(float(v)) for v in value)
+            vals = tuple(_q(float(v)) for v in value) if isinstance(value, (list, tuple)) else ()
             if len(vals) != 3:
                 raise EditorError("position needs x, y, z")
-            return {f"{prefix}[{i}].{field}": vals}
+            if new_id:
+                self._added(st, new_id)["pos"] = vals
+            elif kind == "start":
+                st["fields"][f"start[{i}].position"] = vals
+            elif vals == self.original_position(kind, i):
+                st["positions"].pop(obj_id, None)
+            else:
+                st["positions"][obj_id] = vals
+            return st
         if prop == "heading" and kind == "start":
             t = f"start[{i}].u32_0C"
-            return {t: (degrees_to_angle(float(value), self.original_raw(t)[0]),)}
+            st["fields"][t] = (degrees_to_angle(float(value), self.original_raw(t)[0]),)
+            return st
         if prop == "heading" and kind == "goal":
-            t = f"pool_A[{i}].matrix"
-            orig_m = self._record("goal", i, self.original_doc)["matrix"]
-            h0 = goal_heading(orig_m)
+            base_m = IDENTITY_ROWS if new_id else self._record("goal", i)["matrix"]
+            h0 = goal_heading(base_m)
             if h0 is None:
                 raise EditorError("this goal points straight up or down; its facing cannot be edited")
             d = (float(value) - h0) % 360.0
-            if abs(d) < 1e-9 or abs(d - 360.0) < 1e-9:
-                return {t: self.original_raw(t)}
-            return {t: tuple(_q(v) for row in rotate_matrix(orig_m, d) for v in row)}
+            same = abs(d) < 1e-9 or abs(d - 360.0) < 1e-9
+            rows = base_m if same else rotate_matrix(base_m, d)
+            raw = tuple(_q(v) for row in rows for v in row)
+            if new_id:
+                self._added(st, new_id)["matrix"] = raw
+            else:
+                st["fields"][f"pool_A[{i}].matrix"] = raw
+            return st
         if (kind, prop) in FLAG_TARGET:
-            return {f"{prefix}[{i}].{FLAG_TARGET[(kind, prop)]}": (1 if value else 0,)}
+            if new_id:
+                self._added(st, new_id)[prop] = bool(value)
+            else:
+                st["fields"][f"{TARGET_PREFIX[kind]}[{i}].{FLAG_TARGET[(kind, prop)]}"] = (1 if value else 0,)
+            return st
         raise EditorError(f"{prop} of a {kind} cannot be edited")
+
+
+def banana_value(doc: StageDocument) -> int:
+    return sum(5 if r["u32_0C"] == 1 else 1 if r["u32_0C"] == 0 else 0 for r in doc.pools["C"]["records"])
 
 
 # --------------------------------------------------------------------------- project
@@ -299,6 +459,7 @@ class Project:
         self.undo_stack: List[dict] = []
         self.redo_stack: List[dict] = []
         self._next_action = 1
+        self._next_new = 1
         self.saved_action: Optional[int] = None       # id of the newest action included in the last save
         self.output_path: Optional[str] = None
         self.title = "Touch & Roll editor edits"
@@ -312,31 +473,102 @@ class Project:
         return self.stages[key]
 
     # ---- changes with undo
-    def apply(self, key: str, changes: Dict[str, Tuple[int, ...]], label: str):
+    def _commit(self, key: str, new_state: dict, label: str) -> bool:
         st = self.stage(key)
-        before = {t: st.edits.get(t) for t in changes}
-        if all(st.current_raw(t) == v for t, v in changes.items()):
+        if new_state == st.state:
             return False
-        st.set_raw(changes)                      # raises EditorError and leaves the stage unchanged
-        self.undo_stack.append({"id": self._next_action, "key": key, "before": before, "after": dict(changes),
-                                "label": label})
+        before = _copy_state(st.state)
+        st.set_state(new_state)                  # raises EditorError and leaves the stage unchanged
+        self.undo_stack.append({"id": self._next_action, "key": key, "before": before,
+                                "after": _copy_state(st.state), "label": label})
         self._next_action += 1
         self.redo_stack.clear()
         return True
 
     def change(self, key: str, obj_id: str, prop: str, value, label: Optional[str] = None) -> bool:
         st = self.stage(key)
-        return self.apply(key, st.changes_for(obj_id, prop, value), label or f"{prop} of {obj_id}")
+        return self._commit(key, st.mutate(st.state, obj_id, prop, value), label or f"{prop} of {obj_id}")
 
-    def _restore(self, key, values):
+    def add_object(self, key: str, kind: str, position, bunch: bool = False, red: bool = False,
+                   heading: Optional[float] = None, group: int = 0) -> str:
+        """Add a goal, bumper or banana (to the stage's fixed part); returns the new object's id."""
+        if kind not in OBJECT_KINDS:
+            raise EditorError(f"cannot add a {kind}")
         st = self.stage(key)
-        edits = dict(st.edits)
-        for t, v in values.items():
-            if v is None:
-                edits.pop(t, None)
-            else:
-                edits[t] = v
-        st.edits, st.current, st.doc = st._rebuild(edits)
+        why = st.can_restructure()
+        if why:
+            raise EditorError(f"objects cannot be added here: {why}")
+        new_id = f"{kind}:n{self._next_new}"
+        pos = tuple(_q(float(v)) for v in position)
+        if len(pos) != 3:
+            raise EditorError("position needs x, y, z")
+        a = {"id": new_id, "kind": kind, "group": group, "pos": pos, "bunch": bool(bunch), "red": bool(red)}
+        if kind == "goal":
+            rows = IDENTITY_ROWS
+            if heading is not None:
+                d = (float(heading) - 180.0) % 360.0
+                rows = rows if abs(d) < 1e-9 else rotate_matrix(IDENTITY_ROWS, d)
+            a["matrix"] = tuple(_q(v) for row in rows for v in row)
+        state = _copy_state(st.state)
+        state["added"].append(a)
+        self._commit(key, state, f"add {kind}")
+        self._next_new += 1
+        return new_id
+
+    def default_heading_towards_start(self, key: str, position) -> Optional[float]:
+        """Facing that points a new goal's front at the stage's first start."""
+        starts = (self.stage(key).doc.start or {}).get("records", [])
+        if not starts:
+            return None
+        sx, _sy, sz = starts[0]["position"]
+        dx, dz = sx - position[0], sz - position[2]
+        if math.hypot(dx, dz) < 1e-6:
+            return None
+        return math.degrees(math.atan2(-dx, -dz)) % 360.0
+
+    def delete_object(self, key: str, obj_id: str) -> bool:
+        kind, i, new_id = _split_id(obj_id)
+        if kind == "start":
+            raise EditorError("starts cannot be deleted")
+        st = self.stage(key)
+        why = st.can_restructure()
+        if why:
+            raise EditorError(f"objects cannot be deleted here: {why}")
+        state = _copy_state(st.state)
+        if new_id:
+            state["added"] = [a for a in state["added"] if a["id"] != new_id]
+        else:
+            if obj_id in state["deleted"]:
+                return False
+            state["deleted"].append(obj_id)
+            state["positions"].pop(obj_id, None)
+            prefix = f"{TARGET_PREFIX[kind]}[{i}]."
+            state["fields"] = {t: v for t, v in state["fields"].items() if not t.startswith(prefix)}
+        return self._commit(key, state, f"delete {obj_id}")
+
+    def duplicate_object(self, key: str, obj_id: str, offset=(1.0, 0.0, 0.0)) -> str:
+        o = {x["id"]: x for x in self.stage(key).objects()}.get(obj_id)
+        if not o or o["kind"] == "start":
+            raise EditorError("select a goal, bumper or banana to duplicate")
+        pos = [o["position"][k] + offset[k] for k in range(3)]
+        return self.add_object(key, o["kind"], pos, bunch=bool(o.get("bunch")), red=bool(o.get("red")),
+                               heading=o.get("heading"))
+
+    def reset_object(self, key: str, obj_id: str) -> bool:
+        """Undo every change of one ORIGINAL object (position, flags, facing, deletion)."""
+        kind, i, new_id = _split_id(obj_id)
+        if new_id:
+            raise EditorError("a new object has no original to go back to; delete it instead")
+        st = self.stage(key)
+        state = _copy_state(st.state)
+        prefix = f"{TARGET_PREFIX[kind]}[{i}]."
+        state["fields"] = {t: v for t, v in state["fields"].items() if not t.startswith(prefix)}
+        state["positions"].pop(obj_id, None)
+        state["deleted"] = [d for d in state["deleted"] if d != obj_id]
+        return self._commit(key, state, f"reset {obj_id}")
+
+    def _restore(self, key, state):
+        self.stage(key).set_state(state)
 
     def undo(self) -> Optional[dict]:
         if not self.undo_stack:
@@ -355,11 +587,11 @@ class Project:
         return a
 
     def changed_stages(self) -> List[str]:
-        return sorted(k for k, st in self.stages.items() if st.plan_edits())
+        return sorted(k for k, st in self.stages.items() if st.changed)
 
     @property
     def edit_count(self) -> int:
-        return sum(len(st.plan_edits()) for st in self.stages.values())
+        return sum(len(st.plan_edits()) + len(st.plan_ops()) for st in self.stages.values())
 
     @property
     def dirty(self) -> bool:
@@ -370,14 +602,20 @@ class Project:
     # ---- plans
     def plan(self) -> dict:
         stages = []
+        uses_objects = False
         for k in self.changed_stages():
             st = self.stages[k]
             e = st.entry
             where = f"World {e['world']}-{e['stage']} {e.get('title') or ''}".strip() if e.get("world") else k
-            stages.append({"stage_key": k, "file": self.rom.profile()["stage_file_format"].format(k),
-                           "where": where, "edits": st.plan_edits()})
-        p = {"schema": PLAN_SCHEMA, "title": self.title, "base_rom_sha1": self.rom_sha1, "stages": stages,
-             "made_with": "tredit"}
+            entry = {"stage_key": k, "file": self.rom.profile()["stage_file_format"].format(k), "where": where}
+            if st.plan_edits():
+                entry["edits"] = st.plan_edits()
+            if st.plan_ops():
+                entry["objects"] = st.plan_ops()
+                uses_objects = True
+            stages.append(entry)
+        p = {"schema": PLAN_SCHEMA_V2 if uses_objects else PLAN_SCHEMA, "title": self.title,
+             "base_rom_sha1": self.rom_sha1, "stages": stages, "made_with": "tredit"}
         if self.output_path:
             p["editor_output_name"] = os.path.basename(self.output_path)
         return p
@@ -390,31 +628,31 @@ class Project:
             fh.write("\n")
 
     def import_plan(self, path: str) -> int:
-        """Load edits from an edit plan or from a ROM copy's .patch.json; returns the number of edits."""
+        """Load edits from an edit plan or from a ROM copy's .patch.json; returns the number of changes."""
         try:
             with open(path, "r", encoding="utf-8") as fh:
                 data = json.load(fh)
         except (OSError, ValueError) as exc:
             raise EditorError(f"cannot read {os.path.basename(path)}: {exc}") from None
-        plan = data.get("plan") if data.get("schema") == "trcore.rom_patch_record/1" else data
-        if isinstance(plan, dict) and plan.get("schema") == "trcore.edit_plan/2":
-            raise EditorError("this plan adds or removes objects; that needs editor 0.2")
-        if not isinstance(plan, dict) or plan.get("schema") != PLAN_SCHEMA:
+        plan = data.get("plan") if isinstance(data, dict) and data.get("schema") == "trcore.rom_patch_record/1" else data
+        if not isinstance(plan, dict) or plan.get("schema") not in (PLAN_SCHEMA, PLAN_SCHEMA_V2):
             raise EditorError("not an edit plan (or a patch record that contains one)")
         if plan.get("base_rom_sha1") and plan["base_rom_sha1"].lower() != self.rom_sha1:
             raise EditorError("these edits were made for a different ROM file than the one open now")
         staged = []
+        next_new = self._next_new
         for s in plan.get("stages", []):
             key = s.get("stage_key")
             if key not in self.entries:
                 raise EditorError(f"plan stage {key!r} is not in this ROM")
             st = self.stage(key)
-            changes = {}
+            state = _copy_state(st.state)
+            n = 0
             for e in s.get("edits", []):
                 t = e.get("target", "")
                 try:
                     orig = st.original_raw(t)
-                except (EditorError, ValueError, KeyError):
+                except (EditorError, ValueError, KeyError, IndexError):
                     raise EditorError(f"{key}: unknown target {t!r}") from None
                 field = t.rsplit(".", 1)[-1]
                 if field in ("position", "translation", "matrix"):
@@ -424,16 +662,65 @@ class Project:
                     to = (int(e["to"], 0) if isinstance(e["to"], str) else e["to"],)
                 if frm != orig:
                     raise EditorError(f"{key} {t}: plan expects {e['from']}, the ROM has {[v / FX for v in orig]}")
-                changes[t] = to
-            staged.append((key, changes))
-        n = 0
-        for key, changes in staged:
-            if changes:
-                self.apply(key, changes, f"import {os.path.basename(path)}")
-                n += len(changes)
+                prefix, rest = t.split("[", 1)
+                kind = PREFIX_KIND[prefix]
+                if kind in OBJECT_KINDS and field == POS_FIELD[kind]:
+                    state["positions"][f"{kind}:{int(rest.split(']')[0])}"] = to
+                else:
+                    state["fields"][t] = to
+                n += 1
+            for op in s.get("objects", []):
+                kind = op.get("kind")
+                if kind not in OBJECT_KINDS:
+                    raise EditorError(f"{key}: unknown object kind {kind!r}")
+                if op.get("op") in ("remove", "move"):
+                    i = op.get("index")
+                    try:
+                        orig = st.original_position(kind, i)
+                    except (EditorError, TypeError):
+                        raise EditorError(f"{key}: {kind} {i!r} does not exist") from None
+                    want = op.get("expect_position") if op["op"] == "remove" else op.get("from")
+                    if want is None or tuple(_q(v) for v in want) != orig:
+                        raise EditorError(f"{key}: {kind} {i} is not where the plan expects it")
+                    if op["op"] == "remove":
+                        state["deleted"].append(f"{kind}:{i}")
+                    else:
+                        state["positions"][f"{kind}:{i}"] = tuple(_q(v) for v in op["to"])
+                elif op.get("op") == "add":
+                    a = {"id": f"{kind}:n{next_new}", "kind": kind, "group": int(op.get("group", 0)),
+                         "pos": tuple(_q(v) for v in op["position"]), "bunch": bool(op.get("bunch")),
+                         "red": bool(op.get("red"))}
+                    if kind == "goal":
+                        m = op.get("matrix")
+                        a["matrix"] = tuple(_q(v) for v in m) if m else tuple(_q(v) for r in IDENTITY_ROWS for v in r)
+                    next_new += 1
+                    state["added"].append(a)
+                else:
+                    raise EditorError(f"{key}: unknown object operation {op.get('op')!r}")
+                n += 1
+            staged.append((key, state, n))
+        applied = []
+        try:
+            for key, state, n in staged:
+                if n:
+                    before = _copy_state(self.stage(key).state)
+                    self.stage(key).set_state(state)
+                    applied.append((key, before, n))
+        except EditorError:
+            for key, before, _n in applied:             # all or nothing
+                self.stage(key).set_state(before)
+            raise
+        for key, before, _n in applied:
+            self.undo_stack.append({"id": self._next_action, "key": key, "before": before,
+                                    "after": _copy_state(self.stage(key).state),
+                                    "label": f"import {os.path.basename(path)}"})
+            self._next_action += 1
+        if applied:
+            self.redo_stack.clear()
+        self._next_new = next_new
         if plan.get("title"):
             self.title = plan["title"]
-        return n
+        return sum(n for _k, _b, n in applied)
 
     # ---- saving
     def save(self, out_path: str, replace_own: bool = True) -> dict:

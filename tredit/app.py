@@ -12,21 +12,23 @@ from trcore.stagemodel import floor_below
 
 from . import EDITOR_NAME, __version__
 from .mapview import COLORS, PROJECTIONS, MapView
-from .project import EditorError, Project, find_original_rom, verify_saved_rom
+from .project import DEFAULT_HEIGHT, EditorError, Project, find_original_rom, verify_saved_rom
 from trcore.romwrite import patch_record_path
 
 Qt = QtCore.Qt
 KIND_NAMES = {"start": "Start", "goal": "Goal", "bumper": "Bumper", "banana": "Banana"}
 
-EDITABLE_HELP = """<b>What this version can change</b> (meanings confirmed in-game, evidence Level 4):
+EDITABLE_HELP = """<b>What this version can change</b> (confirmed in-game, evidence Level 4):
 <ul>
 <li>Start: position and facing</li>
-<li>Goals: position, facing (turn about the vertical axis) and red / normal</li>
-<li>Bumpers: position</li>
-<li>Bananas: position and single / bunch</li>
+<li>Goals: add, delete, position, facing (turn about the vertical axis) and red / normal</li>
+<li>Bumpers: add, delete, position</li>
+<li>Bananas: add, delete, position and single / bunch</li>
 </ul>
+New objects go into the stage's fixed part. Moves anywhere inside the stage's collision grid are safe:
+the editor updates the game's collision lists when an object leaves its original cells.
 <b>Shown but locked</b>: bumper rotation (not testable, bumpers are round), stage groups and their
-motion, collision, everything not listed above. Adding or removing objects comes in a later version.
+motion, collision, everything not listed above.
 <p>Objects in a group other than the stage's first group belong to a part that may move
 (drawn with a dashed outline); their positions are shown at the stage's rest pose and they move with
 their part in-game.</p>
@@ -39,8 +41,8 @@ LEGEND_HTML = """<b>Map legend</b><br>
 <span style='color:#46a0ff'>&#9644;</span> goal (arrow = front) &nbsp; <span style='color:#f03c3c'>&#9644;</span> red goal<br>
 <span style='color:#e646e6'>&#9679;</span> bumper &nbsp; <span style='color:#ffdc28'>&#9679;</span> banana,
 three dots = bunch (5)<br>
-white ring = changed &nbsp; <span style='color:#ff8c00'>orange dashed ring</span> = collision warning<br>
-dashed outline = in a moving part<br>
+white ring = changed or new &nbsp; dashed outline = in a moving part<br>
+Add: toolbar or Object menu, then click on the map &middot; Del deletes &middot; Ctrl+D duplicates<br>
 Top view: forward (the start's direction at angle 0) is up, x to the right.<br>
 Drag to move &middot; arrows / PgUp / PgDn nudge &middot; Q / E turn (Shift = 1&deg;) &middot;
 wheel zoom &middot; right-drag pan &middot; F fit"""
@@ -134,7 +136,7 @@ class PropertiesPanel(QtWidgets.QWidget):
                 self.bunch.setVisible(False)
                 return
             k = obj["kind"]
-            self.title.setText(f"{KIND_NAMES[k]} {obj['index'] + 1}")
+            self.title.setText(obj.get("label") or f"{KIND_NAMES[k]} {obj['index'] + 1}")
             grp = obj.get("group_name") or f"group {obj['group']}"
             moving = " — may move with this part" if obj["in_moving_group"] else ""
             self.sub.setText(f"Group: {grp}{moving}\nRecord at {obj['offset']} in the stage file")
@@ -160,12 +162,11 @@ class PropertiesPanel(QtWidgets.QWidget):
                 notes.append("Facing: 0° = towards -z (up on the top view); larger turns left.")
             if k == "goal":
                 notes.append("Facing is the direction of the goal's front (the side you roll through).")
-            if obj.get("collision_warning"):
-                notes.insert(0, "⚠ Collision: " + obj["collision_warning"] + ". The game only checks an object "
-                             "from the collision cells listed for it, so here it may not be collectable or solid. "
-                             "Move it back closer, or wait for the next version, which updates these lists.")
+            if obj.get("new"):
+                notes.insert(0, "New object (added in this editor). Del deletes it.")
+            if obj["in_moving_group"] and k != "start":
+                notes.append("Moving part: moving this far or deleting it is not yet confirmed in-game.")
             notes.append("Values are shown as stored (1/4096 steps).")
-            self.note.setStyleSheet("color: #ffa040;" if obj.get("collision_warning") else "color: #8a8f9c;")
             self.note.setText("\n".join(notes))
         finally:
             for w in widgets:
@@ -189,6 +190,8 @@ class MainWindow(QtWidgets.QMainWindow):
             v.on_move = self.move_object
             v.floor_height = self.floor_height
         self.top.on_hover = self.hover_top
+        self.top.on_place = self.place_at
+        self.pending_add = None
         self.side_combo = QtWidgets.QComboBox()
         self.side_combo.addItem("Automatic (along the longer side)", "auto")
         for key in ("right", "behind"):
@@ -280,11 +283,33 @@ class MainWindow(QtWidgets.QMainWindow):
         self.a_undo = self._act(e, "&Undo", self.undo, QtGui.QKeySequence.Undo)
         self.a_redo = self._act(e, "&Redo", self.redo, QtGui.QKeySequence.Redo)
         e.addSeparator()
+        self.a_delete = self._act(e, "&Delete selected object", self.delete_selected, QtGui.QKeySequence.Delete)
+        self.a_dup = self._act(e, "D&uplicate selected object", self.duplicate_selected, "Ctrl+D")
+        e.addSeparator()
         self._act(e, "Turn left 15°", lambda: self.turn(15), "Q")
         self._act(e, "Turn right 15°", lambda: self.turn(-15), "E")
         self._act(e, "Turn left 1°", lambda: self.turn(1), "Shift+Q")
         self._act(e, "Turn right 1°", lambda: self.turn(-1), "Shift+E")
         self._act(e, "Reset selected object to original", self.reset_selected)
+        o = mb.addMenu("&Object")
+        tb = self.addToolBar("Objects")
+        tb.setObjectName("objects_toolbar")
+        tb.setMovable(False)
+        self.add_actions = {}
+        for kind, label, key in (("banana", "Add &banana", "1"), ("bunch", "Add banana b&unch", "2"),
+                                 ("bumper", "Add bum&per", "3"), ("goal", "Add &goal", "4")):
+            a = self._act(o, label, lambda _c=False, k=kind: self.begin_add(k), key)
+            a.setToolTip(f"{label.replace('&', '')} ({key}), then click on the top view")
+            tb.addAction(a)
+            self.add_actions[kind] = a
+        o.addSeparator()
+        tb.addSeparator()
+        o.addAction(self.a_dup)
+        o.addAction(self.a_delete)
+        tb.addAction(self.a_dup)
+        tb.addAction(self.a_delete)
+        esc = QtGui.QShortcut(QtGui.QKeySequence(Qt.Key_Escape), self)
+        esc.activated.connect(self.cancel_add)
         v = mb.addMenu("&View")
         self._act(v, "Zoom to &fit", lambda: (self.top.fit(), self.side.fit()), "F")
         self._act(v, "Show &grid", self.toggle_grid, checkable=True, checked=True)
@@ -320,7 +345,16 @@ class MainWindow(QtWidgets.QMainWindow):
         self.a_redo.setText(f"&Redo {p.redo_stack[-1]['label']}" if p and p.redo_stack else "&Redo")
         self.a_play.setEnabled(bool(p and p.output_path))
         n = p.edit_count if p else 0
-        self.status_edits.setText(f"{n} changed field(s) in {len(p.changed_stages())} stage(s)" if p else "")
+        txt = f"{n} change(s) in {len(p.changed_stages())} stage(s)" if p else ""
+        if p and self.stage_key:
+            txt = f"Banana value {p.stage(self.stage_key).banana_value} / 255   ·   " + txt
+        self.status_edits.setText(txt)
+        sel = self.objects.get(self.selected) if p else None
+        can_struct = bool(p and self.stage_key and not p.stage(self.stage_key).can_restructure())
+        for a in self.add_actions.values():
+            a.setEnabled(can_struct)
+        self.a_delete.setEnabled(bool(sel and sel.get("deletable")))
+        self.a_dup.setEnabled(bool(sel and sel["kind"] != "start" and can_struct))
 
     def update_title(self):
         t = EDITOR_NAME
@@ -341,7 +375,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def describe(self, o: dict) -> str:
         p = ", ".join(f"{v:.4g}" for v in o["position"])
-        s = f"{KIND_NAMES[o['kind']]} {o['index'] + 1}  ({p})"
+        s = f"{o.get('label') or KIND_NAMES[o['kind']]}  ({p})"
         if o.get("heading") is not None:
             s += f"  facing {o['heading']:.1f}°"
         if o["kind"] == "goal":
@@ -530,12 +564,22 @@ class MainWindow(QtWidgets.QMainWindow):
             lines.append(f"  {g['index']:2d} {g.get('name_text_04') or '?':24s} goals {n['A']} bumpers {n['B']} "
                          f"bananas {n['C']}  [{kinds.get(g['index'])}]  T=({t})")
         lines.append("")
+        lines.append(f"Banana value: {st.banana_value} / 255 (a bunch counts 5)")
+        lines.append("")
         lines.append("Edits in this stage:")
-        pe = st.plan_edits()
-        if not pe:
+        pe, ops = st.plan_edits(), st.plan_ops()
+        if not pe and not ops:
             lines.append("  (none)")
         for x in pe:
             lines.append(f"  {x['target']}: {x['from']} -> {x['to']}")
+        for op in ops:
+            where = op.get("position") or op.get("to") or op.get("expect_position")
+            idx = f" {op['index'] + 1}" if "index" in op else ""
+            lines.append(f"  {op['op']} {op['kind']}{idx} at ({', '.join(f'{v:g}' for v in where)})"
+                         + ("  [collision cells rebuilt]" if op["op"] in ("move", "add") else ""))
+        why = st.can_restructure()
+        if why:
+            lines.append(f"  (adding / deleting is not available here: {why})")
         return "\n".join(lines)
 
     # ------------------------------------------------------------------ selection & edits
@@ -549,8 +593,12 @@ class MainWindow(QtWidgets.QMainWindow):
         st = self.project.stage(self.stage_key)
         objs = st.objects()
         self.objects = {o["id"]: o for o in objs}
-        self.top.update_objects(objs)
-        self.side.update_objects(objs)
+        if self.selected not in self.objects:
+            self.selected = None
+        self.top.sync_objects(objs)
+        self.side.sync_objects(objs)
+        self.top.set_selected(self.selected)
+        self.side.set_selected(self.selected)
         self.props.show_object(self.objects.get(self.selected))
         self.info.setPlainText(self.stage_info(st))
         self.refresh_tree_marks()
@@ -568,9 +616,71 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def move_object(self, oid, pos):
         self.do_change(oid, "position", pos, f"move {oid}")
-        o = self.objects.get(oid)
-        if o and o.get("collision_warning"):
-            self.statusBar().showMessage(f"⚠ {oid}: {o['collision_warning']} (see the Selected panel)", 10000)
+
+    # ---- adding / deleting
+    def begin_add(self, kind):
+        if not self.project or not self.stage_key:
+            return
+        self.pending_add = kind
+        self.top.set_place_mode(True)
+        name = "banana bunch" if kind == "bunch" else kind
+        self.statusBar().showMessage(f"Click on the top view to place a {name} (Esc cancels)")
+
+    def cancel_add(self):
+        if getattr(self, "pending_add", None):
+            self.pending_add = None
+            self.top.set_place_mode(False)
+            self.statusBar().showMessage("Adding cancelled", 3000)
+
+    def place_at(self, x, z):
+        kind = getattr(self, "pending_add", None)
+        self.pending_add = None
+        self.top.set_place_mode(False)
+        if not kind or not self.project or not self.stage_key:
+            return
+        real = "banana" if kind == "bunch" else kind
+        f = self.floor_height(x, z, 1e9)
+        y = (f if f is not None else 0.0) + DEFAULT_HEIGHT[real]
+        snap = self.top.snap
+        if snap:
+            x, z = round(x / snap) * snap, round(z / snap) * snap
+        heading = self.project.default_heading_towards_start(self.stage_key, (x, y, z)) if real == "goal" else None
+        try:
+            new_id = self.project.add_object(self.stage_key, real, (x, y, z), bunch=(kind == "bunch"),
+                                             heading=heading)
+        except EditorError as exc:
+            self.error(exc)
+            self.sync()
+            return
+        self.selected = new_id
+        self.sync()
+        note = "" if f is not None else "  (no floor under this point: check its height)"
+        self.statusBar().showMessage(f"Added {self.objects[new_id]['label']} at ({x:.2f}, {y:.2f}, {z:.2f}){note}", 8000)
+
+    def delete_selected(self):
+        o = self.objects.get(self.selected)
+        if not o or not o.get("deletable"):
+            return
+        try:
+            self.project.delete_object(self.stage_key, o["id"])
+        except EditorError as exc:
+            self.error(exc)
+        self.selected = None
+        self.sync()
+
+    def duplicate_selected(self):
+        o = self.objects.get(self.selected)
+        if not o or o["kind"] == "start":
+            return
+        try:
+            step = self.top.snap or 1.0
+            new_id = self.project.duplicate_object(self.stage_key, o["id"], (max(step, 1.0), 0.0, 0.0))
+        except EditorError as exc:
+            self.error(exc)
+            self.sync()
+            return
+        self.selected = new_id
+        self.sync()
 
     def property_changed(self, oid, prop, value):
         self.do_change(oid, prop, value, f"{prop} of {oid}")
@@ -596,15 +706,11 @@ class MainWindow(QtWidgets.QMainWindow):
         o = self.objects.get(self.selected)
         if not o:
             return
-        st = self.project.stage(self.stage_key)
-        prefix = {"start": "start", "goal": "pool_A", "bumper": "pool_B", "banana": "pool_C"}[o["kind"]]
-        changes = {t: st.original_raw(t) for t in st.edits if t.startswith(f"{prefix}[{o['index']}].")}
-        if changes:
-            try:
-                self.project.apply(self.stage_key, changes, f"reset {o['id']}")
-            except EditorError as exc:
-                self.error(exc)
-            self.sync()
+        try:
+            self.project.reset_object(self.stage_key, o["id"])
+        except EditorError as exc:
+            self.error(exc)
+        self.sync()
 
     def undo(self):
         a = self.project and self.project.undo()

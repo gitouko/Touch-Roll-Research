@@ -220,8 +220,9 @@ def apply_object_ops(decoded: bytes, ops: List[dict], name: str = "") -> Tuple[b
                         rx, rz = goal_extent(list(struct.unpack_from("<9i", e.data, 0)))
                     fp = grid.footprint(x, z, rx + grid.sx, rz + grid.sz)
                     if not fp:
-                        raise ObjectEditRefused(f"{kind} at {[v / FX for v in (x, _y, z)]} is outside group {g}'s "
-                                                "collision grid; the ball could never touch it")
+                        raise ObjectEditRefused(f"{kind} at {[v / FX for v in (x, _y, z)]} is outside the collision "
+                                                f"grid of the part it belongs to (group {g}); the ball could never "
+                                                "touch it there")
                     cells_of.append(fp)
                 else:
                     cells_of.append(grid.listed(bit, orig_local[e.orig]))

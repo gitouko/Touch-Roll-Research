@@ -117,6 +117,36 @@ class GuiSmoke(unittest.TestCase):
         w.save()                                 # replaces the copy, built from the original
         self.assertEqual(self.errors, [])
 
+    def test_place_delete_duplicate(self):
+        w = self.w
+        w.begin_add("bumper")
+        self.assertTrue(w.top.place_mode)
+        w.place_at(2.0, -2.0)
+        self.assertFalse(w.top.place_mode)
+        new = w.selected
+        self.assertTrue(new.startswith("bumper:n"))
+        self.assertIn(new, w.top.markers)
+        self.assertIn(new, w.side.markers)
+        w.begin_add("bunch")
+        w.cancel_add()
+        self.assertIsNone(w.pending_add)
+        w.select("banana:1")
+        w.duplicate_selected()
+        dup = w.selected
+        self.assertTrue(w.objects[dup]["bunch"])
+        w.select("banana:0")
+        self.assertTrue(w.a_delete.isEnabled())
+        w.delete_selected()
+        self.assertNotIn("banana:0", w.top.markers)
+        w.select("start:0")
+        self.assertFalse(w.a_delete.isEnabled())
+        w.undo()                                   # brings banana:0 back
+        self.assertIn("banana:0", w.top.markers)
+        self.assertIn("Banana value", w.status_edits.text())
+        out = os.path.join(self.tmp, "objs.nds")
+        w._write(out, replace_own=True)
+        self.assertEqual(self.errors, [])
+
     def test_errors_are_reported_not_raised(self):
         w = self.w
         w.do_change("goal:0", "position", [1e9, 0, 0])

@@ -228,6 +228,8 @@ class MapView(QtWidgets.QGraphicsView):
         self.on_select: Callable[[Optional[str]], None] = lambda oid: None
         self.on_move: Callable[[str, list], None] = lambda oid, pos: None
         self.on_hover: Callable[[Optional[list]], None] = lambda p: None
+        self.on_place: Callable[[float, float], None] = lambda x, z: None
+        self.place_mode = False
         self.floor_height: Callable[[float, float, float], Optional[float]] = lambda x, z, y: None
         self.follow_floor = True
         self._pan = None
@@ -265,6 +267,24 @@ class MapView(QtWidgets.QGraphicsView):
             m = self.markers.get(o["id"])
             if m is not None:
                 m.update_from(o)
+
+    def sync_objects(self, objects: List[dict]):
+        """Add markers for new objects, drop markers of deleted ones, update the rest."""
+        ids = {o["id"] for o in objects}
+        for oid in [k for k in self.markers if k not in ids]:
+            self.scene().removeItem(self.markers.pop(oid))
+        for o in objects:
+            m = self.markers.get(o["id"])
+            if m is None:
+                m = Marker(self, o)
+                self.scene().addItem(m)
+                self.markers[o["id"]] = m
+            else:
+                m.update_from(o)
+
+    def set_place_mode(self, on: bool):
+        self.place_mode = on
+        self.viewport().setCursor(Qt.CrossCursor if on else Qt.ArrowCursor)
 
     def set_selected(self, oid: Optional[str]):
         for k, m in self.markers.items():
@@ -315,6 +335,10 @@ class MapView(QtWidgets.QGraphicsView):
         if ev.button() in (Qt.RightButton, Qt.MiddleButton):
             self._pan = ev.position()
             self.setCursor(Qt.ClosedHandCursor)
+            return
+        if self.place_mode and ev.button() == Qt.LeftButton and self.proj == "top":
+            s = self.mapToScene(ev.position().toPoint())
+            self.on_place(s.x(), s.y())
             return
         item = self.itemAt(ev.position().toPoint())
         if item is None or not isinstance(item, Marker):

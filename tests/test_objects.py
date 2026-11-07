@@ -6,24 +6,15 @@ from trcore import lz10
 from trcore.stc import cells as CL
 from trcore.stc.document import StageDocument
 from trcore.stc.objects import ObjectEditRefused, apply_object_ops
-from tests.synth import IDENTITY, build_stage
+from tests.synth import IDENTITY, build_stage, with_cell_lists
 
 REAL_ROM = os.environ.get("TRCORE_ROM")
 
 
 def listed_stage():
-    """Synthetic stage whose bananas and goal are listed in its 2x3 grid (via a relist of each object)."""
-    raw = bytearray(build_stage(goals=((0, IDENTITY, (0, 0, -10)),),
-                                bananas=((1, 0.5, 2, 0), (-1, 0.5, 2, 1), (5, 0.5, 15, 0))))
-    desc = struct.unpack_from("<I", raw, 0x18)[0]
-    nx, nz = struct.unpack_from("<hh", raw, desc + 0x40)
-    table = struct.unpack_from("<I", raw, desc + 0x54)[0]
-    for c in range(nx * nz):                          # bits 0-3 present but empty
-        struct.pack_into("<II", raw, table + 8 * c, 0xF, 0)
-    ops = [{"op": "move", "kind": "banana", "index": i, "from": p, "to": p}
-           for i, p in enumerate(([1, 0.5, 2], [-1, 0.5, 2], [5, 0.5, 15]))]
-    ops.append({"op": "move", "kind": "goal", "index": 0, "from": [0, 0, -10], "to": [0, 0, -10]})
-    return apply_object_ops(bytes(raw), ops, "synthetic")[0]
+    """Synthetic stage whose bananas and goal are listed in its 2x3 grid."""
+    return with_cell_lists(build_stage(goals=((0, IDENTITY, (0, 0, -10)),),
+                                       bananas=((1, 0.5, 2, 0), (-1, 0.5, 2, 1), (5, 0.5, 15, 0))))
 
 
 class Synthetic(unittest.TestCase):

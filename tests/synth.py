@@ -105,3 +105,22 @@ def build_stage(goals=((0, IDENTITY, (0, 0, -10)),), bananas=((1, 0.5, 2, 0), (-
         struct.pack_into("<II", buf, D + 0xA4, ccount, pc)
     # with several groups, an owner after group 0 must still start at the pool head
     return bytes(buf[:total_len])
+
+
+def with_cell_lists(stage: bytes) -> bytes:
+    """Give a build_stage() result proper collision lists: empty bits 0-3, and every goal and banana listed
+    by the footprint rule (done by re-listing each object in place with trcore.stc.objects)."""
+    from trcore.stc.document import StageDocument
+    from trcore.stc.objects import apply_object_ops
+    raw = bytearray(stage)
+    desc = struct.unpack_from("<I", raw, 0x18)[0]
+    nx, nz = struct.unpack_from("<hh", raw, desc + 0x40)
+    table = struct.unpack_from("<I", raw, desc + 0x54)[0]
+    for c in range(nx * nz):
+        struct.pack_into("<II", raw, table + 8 * c, 0xF, 0)
+    doc = StageDocument(bytes(raw))
+    ops = [{"op": "move", "kind": kind, "index": r["index"], "from": r[field], "to": r[field]}
+           for kind, pool, field in (("goal", "A", "translation"), ("banana", "C", "position"))
+           for r in doc.pools[pool]["records"]]
+    return apply_object_ops(bytes(raw), ops, "synthetic")[0]
+

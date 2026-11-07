@@ -1,10 +1,12 @@
-# Touch & Roll Stage Editor — version 0.1.1 (Milestone 2)
+# Touch & Roll Stage Editor — version 0.2
 
-**Status: accepted in-game on 2026-11-07** (`docs/experiments/editor_acceptance_v0.1/`).
+**Status:** 0.1 was accepted in-game on 2026-11-07 (`docs/experiments/editor_acceptance_v0.1/`). 0.2
+adds adding, deleting, duplicating and free moves, all built on edit test 3, which passed in-game. 0.2's
+own acceptance test is below.
 
 A desktop editor for *Super Monkey Ball: Touch & Roll* (USA) stages, written in Python on top of
-`trcore`. It shows each stage's own model as a top-down map, plus a side view, and lets you move and
-turn the objects whose meaning has been confirmed in-game.
+`trcore`. It shows each stage's own model as a top-down map, plus a side view. You can add, delete,
+move and turn the objects whose meaning has been confirmed in-game.
 
 ## Start it
 
@@ -20,14 +22,21 @@ From a command prompt you can also run `py -3 -m tredit "path\to\rom.nds"`.
 
 | Object | Editable | Locked (shown only) |
 |---|---|---|
-| Start | position, facing | — |
-| Goal | position, facing (turn about the vertical axis), red / normal | tilt |
-| Bumper | position | rotation (not testable: bumpers are round) |
-| Banana | position, single / bunch | — |
+| Start | position, facing | adding / deleting starts |
+| Goal | **add, delete, duplicate**, position, facing (turn about the vertical axis), red / normal | tilt |
+| Bumper | **add, delete, duplicate**, position | rotation (not testable: bumpers are round) |
+| Banana | **add, delete, duplicate**, position, single / bunch | — |
 
-Everything else is read-only in this version: stage groups (parts), motion, collision, and any field
-not confirmed in-game. *Stage info (read-only)* lists them. Adding and removing objects comes in
-Milestone 3.
+* New objects go into the stage's **fixed part** (group 0).
+* Objects can be moved **anywhere inside the stage's collision grid**. When a move takes an object out of
+  the collision cells the game checks it in, the editor rebuilds those lists (spec §16, confirmed by edit
+  test 3). Small moves stay simple field edits, exactly as in 0.1.
+* A stage's **banana value** (single = 1, bunch = 5) must stay at **255 or less**, because the game counts
+  it in one byte. The status bar shows it, and the editor refuses changes that would go over.
+* Everything else is read-only: stage groups (parts), motion, collision and any field not confirmed
+  in-game. *Stage info (read-only)* lists them.
+* Objects in **moving parts** can be moved, and in 0.2 also deleted. Deleting them or moving them far has
+  not been confirmed in-game yet; the panel says so.
 
 ## Using it
 
@@ -48,11 +57,13 @@ Milestone 3.
 * **View menu:** snap step for dragging (default 0.25). *Keep height above the floor while dragging*
   (on by default) keeps an object at the same height above the floor when you drag it over higher or
   lower ground.
-* **Collision warning (0.1.1):** the game only checks an object from the collision cells listed for it
-  (spec §16). Moving a goal, bumper or banana changes its record but not those lists. If a move takes
-  it out of its cells (roughly more than 2 units for a banana), it gets an **orange dashed ring** and a
-  warning in the panel: in-game it may not be collectable or solid there. Small moves are fine. The
-  next version rebuilds the lists so any move is safe.
+* **Adding:** pick *Add banana* (key **1**), *Add banana bunch* (**2**), *Add bumper* (**3**) or *Add goal*
+  (**4**) from the toolbar or the *Object* menu, then click on the top view. **Esc** cancels.
+  * New objects sit on the floor under the click: bananas 0.5 above it, bumpers and goals on it.
+  * A new goal turns its front towards the stage's start.
+  * If there is no floor under the click, the status bar says so; set the height in the panel.
+* **Delete** removes the selected goal, bumper or banana. **Ctrl+D** duplicates it 1 unit to the right.
+  *Edit > Reset selected object to original* brings back a deleted or changed original object.
 * Objects in a moving part have a **dashed outline**. They are shown where they are when the stage
   starts, and they move with their part in-game.
 * Facing: **0° = towards −z** (up on the top view), and larger angles turn **left**. A goal's facing is
@@ -81,38 +92,48 @@ Milestone 3.
 BizHawk keeps saves per ROM file name. For a new copy name, copy your existing `.SaveRAM` in
 `BizHawk\NDS\SaveRAM\` to the new name (spaces instead of underscores) if you need unlocked worlds.
 
-## Acceptance test for this version (please do this one)
+## Acceptance test for 0.2 (please do this one)
 
-Use **only the editor** for steps 1–4.
+Use **only the editor** for steps 1–5. Start from your original ROM.
 
-1. Open the original ROM. Go to **1-1 Elementary**.
-   * Select *Start 1* and press **Q** three times. Facing goes 270° → 315°.
-     *Prediction:* the ball starts turned 45° to the left of the goal direction.
-   * Select *Banana 2*, the second banana from the start, and tick **Bunch**.
-   * Drag *Banana 3*, the one just past the goal, to just in front of the start.
-2. Go to **1-2 Sine Wave**. Select *Goal 1* and press **E** three times (180° → 135°), then tick
-   **Red goal**. *Prediction:* the goal is red and turned 45°. Its front faces the approaching ball
-   but is angled to the ball's left, as the arrow on the map shows.
-   This is the first goal turn that is not a multiple of 90°.
-3. Go to **5-2 Sword**. Select *Bumper 5*, the one in the middle of the diamond (x 0, z −30), and press
-   **Right** four times (x 0 → 1.0). *Prediction:* that bumper sits 1 unit to the right of the
-   diamond's centre.
-4. **Save as new copy…** → `TR editor test.nds`. Then press **F5** (or open the copy in BizHawk) and check
-   1–3 against the map.
-5. Back in the editor, in 1-1 tick **Bunch** on *Banana 4* and press **Ctrl+S**. The copy is replaced
-   without a question. Reload it in BizHawk: banana 4 should now be a bunch too.
-6. Optional: run `tools/bizhawk/trcore_dump_stage.lua` while visiting 1-1, 1-2 and 5-2 and send the
-   dumps. I'll confirm that memory matches the editor's bytes, as in the edit tests.
+1. **1-1 Elementary**
+   * Add a **banana bunch** (key 2) on the floor between the start and the goal, about 3 units to the side.
+   * Select *Banana 1* and press **Del**.
+   * Drag *Banana 3* (just past the goal) all the way back to about 2 units in front of the start. In 0.1
+     this would have left it uncollectable.
 
-Please also note anything on the map that does not match what the game shows: a missing floor piece,
-a mirrored layout, an object in the wrong place, or a facing arrow pointing the wrong way.
+   *Predictions:* the bunch is there and gives +5; banana 1 is gone; banana 3 is collected at its new place.
+2. **1-2 Sine Wave**
+   * Add a **goal** (key 4) on the straight about 6 units ahead of the start. It turns towards the start.
+   * Tick **Red goal**.
+
+   *Prediction:* a red goal ahead of the start, and rolling into it clears the stage. Please note what
+   happens next, because this is the first red goal added from scratch.
+3. **5-2 Sword**
+   * Add **two bumpers** (key 3) on the blade.
+   * Delete **two** of the diamond's bumpers.
+   * Select a banana and press **Ctrl+D**.
+
+   *Predictions:* the new bumpers bounce the ball; the deleted ones are gone; the copy can be collected.
+4. **Save as new copy…** → `TR editor test 2.nds` (copy your `.SaveRAM` to `TR editor test 2.SaveRAM`
+   first). Play it and check 1–3.
+5. Back in the editor, press **Ctrl+Z** once (it undoes the duplicate), then **Ctrl+S**. The copy is
+   replaced; reload it and the duplicated banana is gone.
+6. Optional, moving parts: in **5-6 Conveyor**, delete one of the moving bumpers. *Prediction:* it is
+   gone and the others still move.
+7. Optional: run `trcore_dump_stage.lua` in the stages you edited and send the dumps.
+
+Please also note anything on the map that does not match what the game shows.
 
 ## How the editor stays accurate
 
-* The GUI never writes bytes. Every change becomes a field edit
-  (`trcore/stc/edit.py`, the same code that built both in-game edit tests). That code refuses anything
-  outside the confirmed fields and checks the stage's structure after every edit.
-* Tests replay edit tests 1 and 2 through the editor's own operations and check that the resulting
-  stage bytes are identical to the in-game-verified ones (`tests/test_editor_project.py`).
+* The GUI never writes bytes. Every change becomes either a field edit (`trcore/stc/edit.py`) or an object
+  operation (`trcore/stc/objects.py`). Those are the same code paths that built the in-game edit tests,
+  and they refuse anything outside the confirmed fields. After every change, the stage is rebuilt from
+  the original bytes and fully checked: structure, pools and totals, collision lists, coverage and the
+  banana value.
+* Tests replay **edit tests 1, 2 and 3** through the editor's own operations: moves, turns, flags, adds,
+  deletes and a far move. The resulting stage bytes are identical to the in-game-verified ones
+  (`tests/test_editor_project.py`).
 * The map comes from `trcore/nitro/nsbmd.py`. Its decoded triangle counts equal the model headers in
   all 213 stage models, and objects sit on the decoded floors (spec §15).
