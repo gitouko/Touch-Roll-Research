@@ -1,4 +1,4 @@
-# Touch & Roll Stage Editor — version 0.1 (Milestone 2)
+# Touch & Roll Stage Editor — version 0.1.1 (Milestone 2)
 
 **Status: accepted in-game on 2026-11-07** (`docs/experiments/editor_acceptance_v0.1/`).
 
@@ -48,6 +48,11 @@ Milestone 3.
 * **View menu:** snap step for dragging (default 0.25). *Keep height above the floor while dragging*
   (on by default) keeps an object at the same height above the floor when you drag it over higher or
   lower ground.
+* **Collision warning (0.1.1):** the game only checks an object from the collision cells listed for it
+  (spec §16). Moving a goal, bumper or banana changes its record but not those lists. If a move takes
+  it out of its cells (roughly more than 2 units for a banana), it gets an **orange dashed ring** and a
+  warning in the panel: in-game it may not be collectable or solid there. Small moves are fine. The
+  next version rebuilds the lists so any move is safe.
 * Objects in a moving part have a **dashed outline**. They are shown where they are when the stage
   starts, and they move with their part in-game.
 * Facing: **0° = towards −z** (up on the top view), and larger angles turn **left**. A goal's facing is

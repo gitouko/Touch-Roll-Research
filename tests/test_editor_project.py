@@ -265,6 +265,21 @@ class ReproduceVerifiedEdits(unittest.TestCase):
     def test_edit_test_2(self):
         self.reproduce("docs/experiments/edit2_bumpers_goals/plan.json")
 
+    def test_collision_warning_for_far_moves(self):
+        p = Project(REAL_ROM, self.rom)
+        objs = {o["id"]: o for o in p.stage("smb1_be01").objects()}
+        x, y, z = objs["banana:0"]["position"]
+        p.change("smb1_be01", "banana:0", "position", [x + 1.0, y, z])          # small move: still listed
+        o = {o["id"]: o for o in p.stage("smb1_be01").objects()}["banana:0"]
+        self.assertIsNone(o["collision_warning"])
+        p.change("smb1_be01", "banana:0", "position", [x + 9.0, y, z])          # far move: not listed there
+        o = {o["id"]: o for o in p.stage("smb1_be01").objects()}["banana:0"]
+        self.assertIn("do not list this banana", o["collision_warning"])
+        p.change("smb1_be01", "goal:0", "position", [6.0, 0.0, 0.5])           # goal nudge: fine
+        self.assertIsNone({o["id"]: o for o in p.stage("smb1_be01").objects()}["goal:0"]["collision_warning"])
+        p.change("smb1_be01", "banana:1", "position", [3.45, 0.5, 9.0])         # off the grid
+        self.assertIn("outside", {o["id"]: o for o in p.stage("smb1_be01").objects()}["banana:1"]["collision_warning"])
+
     def test_every_main_stage_opens_with_a_model(self):
         p = Project(REAL_ROM, self.rom)
         for w in p.worlds:

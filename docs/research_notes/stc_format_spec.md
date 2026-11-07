@@ -340,3 +340,61 @@ Used by the editor's 2D map. Reproduce every number below with
 * **Not decoded:** materials and textures (names only), animations (`.nsbca`, `.nsbta`, …). The 2D map
   shows moving parts at their rest pose.
 
+## 16. How the game uses object pools and the collision cells (Milestone 3 research)
+
+All addresses are ARM9 in the USA rev 0 ROM, read from the game code (Level 2: code plus corpus
+agreement). Reproduce the corpus numbers with `py -3 -m trcore cells "<ROM>.nds" --main-only`.
+
+### 16.1 Loading (0x02041BBC → 0x02046CC4)
+The game decompresses the stage file into one buffer. It then turns these stored offsets into
+pointers (**the complete list**):
+
+* header `0x18` (descriptors) and `0x3C` (start records);
+* per descriptor: `+0x04`, `+0x08` (names), `+0x54` (cell table), `+0x78`, `+0x80`, `+0x88`, `+0x90`
+  (the four collision tables), `+0x98`, `+0xA0`, `+0xA8` (pool A/B/C slices), `+0xAC` (a tree walked
+  recursively by 0x02046F04 / 0x02046F74);
+* every cell entry's `+0x04` and every offset in the array it points to.
+
+Zero offsets are left as zero. No other stored offsets exist. These are exactly the offset→pointer
+words seen in every RAM dump.
+
+### 16.2 Pools and header totals
+* **Goals** (0x020ABF98): `total_A × 0x2C` bytes of runtime data, one goal model instance each.
+* **Bumpers** (0x02042334): `total_B` state bytes (hit animation).
+* **Bananas** (0x020ACB10): `total_C` state bytes (collected / animating). The stage's banana value
+  (single = 1, bunch = 5, other values add nothing) is summed into a **byte**, so it cannot exceed 255.
+  It is summed by walking `total_C` records of 0x10 bytes **from group 0's slice**.
+* Per frame, each group's objects are reached through **that group's slice pointer** and local index.
+  The runtime arrays are indexed by group order plus local index (the banana loop adds each group's
+  `+0xA4` count).
+
+So each pool must stay **one contiguous array in group order**, with header totals equal to the sum
+of the slice counts. Where the array sits in the file does not matter.
+
+### 16.3 Collision cells: the game only checks objects listed in the ball's cell
+* Descriptor `+0x40` s16 nx, `+0x42` s16 nz, `+0x44`/`+0x48` origin x/z, `+0x4C`/`+0x50` cell size x/z
+  (Q20.12), `+0x54` → nx·nz entries of 8 bytes: **u32 type mask**, **offset of an array** with one
+  list offset per set bit, in bit order.
+* A list is sorted u16 indices ending in `0xFFFF`. For bits 0–3, an offset of 0 means an empty list.
+* Lookup 0x02044C68: bits 0–3 are always present (in every main-game cell). A higher bit exists only
+  if it is set in the mask.
+* Ball collision 0x020444F4: bits 1, 2 and 3 go to tables `+0x88` (0x34-byte records), `+0x80` (0x20)
+  and `+0x78` (0x10). **Bit 4 → goals** (pool A slice), **bit 5 → bumpers** (pool B). Banana pickup
+  0x020AC0F4: **bit 6 → bananas** (pool C). Bit 0 indexes table `+0x90` (index range = its count).
+  Indices are **local to the group**.
+* In the 120 main-game stages, every list is sorted, unique and in range. No bits above 6 are used.
+  **Every goal, bumper and banana is listed in at least one cell of its group.** (Only leftover and
+  party files have unlisted objects.)
+* **Footprint rule:** an object is listed in the cells whose index range overlaps `[p − R, p + R]` in x
+  and z. The index is `floor((value − origin) / size)`, clamped to the grid. Stored (rest-pose)
+  coordinates are used in every group. R = 3.5 for bananas and bumpers. For goals, R is the
+  axis-aligned extent of a 3.5-unit cube turned with the goal.
+  * Exact for 1,911 of 1,981 main-game objects.
+  * 68 more differ by one row or column of cells at the edge.
+  * 2 goals on moving parts differ more.
+
+**Consequence for editing:** moving an object changes only its record, not its cell lists. A move
+that leaves the cells listing it (roughly more than 2 units for bananas) leaves the object where
+the ball never checks it. Editor 0.1.1 warns about such moves. Adding, removing or freely moving
+objects needs the lists rebuilt (Milestone 3).
+

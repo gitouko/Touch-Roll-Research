@@ -326,6 +326,26 @@ def cmd_stage_models(args) -> int:
     return 1 if rep["parse_errors"] or rep["triangle_count_mismatches"] else 0
 
 
+def cmd_cells(args) -> int:
+    from collections import Counter
+    from .stc.cells import survey_stage
+    rom = _load_rom(args.rom)
+    keys = [s["stage_key"] for w in rom.stage_map()["worlds"] for s in w["stages"]] if args.main_only else \
+        sorted(p[len("stcoli/"):-len("_stc.lz")] for p in rom.id_by_path if p.startswith("stcoli/"))
+    total = Counter()
+    for k in keys:
+        data = rom.stage_file_decoded(k)
+        total.update(survey_stage(data, StageDocument(data, k)))
+    _p(f"stages: {len(keys)}" + (" (main game)" if args.main_only else " (all stage files)"))
+    for k, v in sorted(total.items()):
+        _p(f"  {k}: {v}")
+    if args.out:
+        w = R.OutputWriter(args.out, [])
+        w.write_text("cell_survey.json", R.dumps({"schema": "trcore.cell_survey/1", "main_only": args.main_only,
+                                                  "stages": len(keys), "counts": dict(sorted(total.items()))}))
+    return 0
+
+
 def _source_bytes(path: str) -> bytes:
     from . import lz10
     with open(path, "rb") as fh:
@@ -470,6 +490,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("rom")
     p.add_argument("--out", help="directory for stage_model_survey.json")
     p.set_defaults(func=cmd_stage_models)
+    p = sub.add_parser("cells", help="check every stage's collision cell lists against the known rules")
+    p.add_argument("rom")
+    p.add_argument("--main-only", action="store_true", help="only the 120 stages used by the 12 worlds")
+    p.add_argument("--out", help="directory for cell_survey.json")
+    p.set_defaults(func=cmd_cells)
     p = sub.add_parser("rom-replace", help="write a NEW ROM copy with one NitroFS file replaced")
     p.add_argument("rom", help="input ROM (never modified)")
     p.add_argument("out", help="new output .nds path (must not exist)")

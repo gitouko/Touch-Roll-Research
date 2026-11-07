@@ -24,6 +24,7 @@ from trcore.nitro.nsbmd import NitroError
 from trcore.rom import NdsRom, RomError
 from trcore.romwrite import RomWriteRefused, patch_record_path
 from trcore.stagemodel import group_kinds, load_stage_model
+from trcore.stc.cells import KIND_POOL, CellError, coverage_problem, read_grids
 from trcore.stc.document import StageDocument
 from trcore.stc.edit import EditRefused, apply_edits
 
@@ -99,6 +100,7 @@ class StageState:
         self._model = None
         self.model_error = None
         self._kinds = None
+        self._grids = None
 
     # ---- model outline (read once)
     @property
@@ -205,8 +207,34 @@ class StageState:
                 elif kind == "banana":
                     o["bunch"] = rec["u32_0C"] == 1
                     o["editable"].add("bunch")
+                o["collision_warning"] = None
+                if kind != "start" and o["changed"]:
+                    o["collision_warning"] = self.collision_warning(kind, i, o["position"])
                 out.append(o)
         return out
+
+    # ---- collision lists (read from the ORIGINAL stage: position edits do not change them yet)
+    @property
+    def grids(self):
+        if self._grids is None:
+            try:
+                self._grids = read_grids(self.original)
+            except CellError:
+                self._grids = []
+        return self._grids
+
+    def collision_warning(self, kind: str, index: int, position) -> Optional[str]:
+        """Warn when a moved goal, bumper or banana leaves the cells the game checks it in."""
+        recs = self.original_doc.pools[KIND_POOL[kind]]["records"]
+        rec = recs[index]
+        g = rec["group"]
+        if not self.grids or g >= len(self.grids):
+            return None
+        local = sum(1 for r in recs[:index] if r["group"] == g)
+        orig = rec["translation" if kind != "banana" else "position"]
+        if [_q(v) for v in position] == [_q(v) for v in orig]:
+            return None
+        return coverage_problem(self.grids[g], kind, local, position, orig)
 
     def changes_for(self, obj_id: str, prop: str, value) -> Dict[str, Tuple[int, ...]]:
         """Translate a GUI property change into raw field values."""
