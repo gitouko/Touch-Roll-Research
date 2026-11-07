@@ -1,0 +1,459 @@
+{
+ "schema": "trcore.rom_patch_record/1",
+ "tool": "trcore 0.1.0",
+ "note": "Edit test 3: add / remove / relist objects (W1-1, W1-2, W5-2)",
+ "input_rom": {
+  "name": "0333 - Super Monkey Ball - Touch & Roll (USA) (En,Fr,De,Es,It).nds",
+  "sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17"
+ },
+ "output_rom": {
+  "name": "TR_edit3_add_remove.nds",
+  "sha1": "ebddb91593acc12c39cab9e040bd64d0372629ff"
+ },
+ "output_identical_to_input": false,
+ "replaced_previous_output": false,
+ "replacements": [
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_be01_stc.lz",
+   "file_id": 2488,
+   "placement": "relocated",
+   "old": {
+    "start": "0x113F000",
+    "end": "0x1144BC1",
+    "size": 23489,
+    "sha256": "3b9a8bc71e7d69e503305536e890e727c7c7fa916f055a97f1cd88249b8caf4a",
+    "decoded_sha256": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+    "decoded_size": 85296
+   },
+   "new": {
+    "start": "0x2D21C00",
+    "end": "0x2D27D5D",
+    "size": 24925,
+    "sha256": "406b68d8a571bc4cf80f8ebb17a631ef91d1ab8d858e72482bc7e9b6bad4233f",
+    "decoded_sha256": "57e1853f5a09741c2ab86279d29b1c348df866fa49f2d71510876b543663968a",
+    "decoded_size": 88688
+   },
+   "header_changes": [
+    {
+     "field": "used_rom_size",
+     "offset": "0x80",
+     "old": "0x2D21B38",
+     "new": "0x2D27D5D"
+    },
+    {
+     "field": "header_crc16",
+     "offset": "0x15E",
+     "old": "0x030E",
+     "new": "0xA109"
+    }
+   ]
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smbds_023_stc.lz",
+   "file_id": 2603,
+   "placement": "relocated",
+   "old": {
+    "start": "0x3B9C00",
+    "end": "0x3C9344",
+    "size": 63300,
+    "sha256": "d36d87942e96d6a71a01449f4eb6d78fb503f0e6c62d9e2487f49fb4771efd6a",
+    "decoded_sha256": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+    "decoded_size": 184992
+   },
+   "new": {
+    "start": "0x2D27E00",
+    "end": "0x2D37BE6",
+    "size": 64998,
+    "sha256": "c1435694cf235e0154121e217c7c38467a292e9e69b78700c5176b05c9fa8bc8",
+    "decoded_sha256": "1e3efec60f118e2682256db9a10e165f9f8985e572277da42c01e1b4fa77c5b5",
+    "decoded_size": 187832
+   },
+   "header_changes": [
+    {
+     "field": "used_rom_size",
+     "offset": "0x80",
+     "old": "0x2D27D5D",
+     "new": "0x2D37BE6"
+    },
+    {
+     "field": "header_crc16",
+     "offset": "0x15E",
+     "old": "0xA109",
+     "new": "0xDA6D"
+    }
+   ]
+  },
+  {
+   "tool": "trcore 0.1.0",
+   "file": "stcoli/smb1_ad02_stc.lz",
+   "file_id": 2463,
+   "placement": "relocated",
+   "old": {
+    "start": "0x4DA000",
+    "end": "0x4ECBEA",
+    "size": 76778,
+    "sha256": "03569f87b5cadb0f7bdf653a226d749e5d48b9ff1cd39374d6e47b64d95dabfa",
+    "decoded_sha256": "5c581011896a2dd9d61af7a3f01cc0a5fa2697892507e01a1373f3b680155c0f",
+    "decoded_size": 261712
+   },
+   "new": {
+    "start": "0x2D37E00",
+    "end": "0x2D4B134",
+    "size": 78644,
+    "sha256": "60cce2ed7edf634d602bb2f0b0d48dbf845ed45420cae2d751bf7b6599b4b817",
+    "decoded_sha256": "ad761d9b3b582017fdbe8088b51b5c2ec1363fee02179f3a2cfc6e39493c9a17",
+    "decoded_size": 265472
+   },
+   "header_changes": [
+    {
+     "field": "used_rom_size",
+     "offset": "0x80",
+     "old": "0x2D37BE6",
+     "new": "0x2D4B134"
+    },
+    {
+     "field": "header_crc16",
+     "offset": "0x15E",
+     "old": "0xDA6D",
+     "new": "0xF177"
+    }
+   ]
+  }
+ ],
+ "plan_schema": "trcore.edit_plan/2",
+ "stage_edits": [
+  {
+   "file": "stcoli/smb1_be01_stc.lz",
+   "stage_key": "smb1_be01",
+   "where": "World 1-1 Elementary",
+   "decoded_size": 85296,
+   "decoded_size_after": 88688,
+   "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+   "decoded_sha256_after": "57e1853f5a09741c2ab86279d29b1c348df866fa49f2d71510876b543663968a",
+   "edits": [],
+   "objects": {
+    "ops": [
+     {
+      "op": "remove",
+      "kind": "banana",
+      "index": 4,
+      "expect_position": [
+       6,
+       0.5,
+       3.25
+      ],
+      "test": "A",
+      "prediction": "banana 5 (beside the goal, z +3.25) is gone; the other four can still be collected"
+     },
+     {
+      "op": "add",
+      "kind": "banana",
+      "group": 0,
+      "position": [
+       -5.0,
+       0.5,
+       -2.0
+      ],
+      "bunch": false,
+      "test": "B",
+      "prediction": "a new single banana between the start and banana 1, 2 units to the side; it can be collected"
+     },
+     {
+      "op": "add",
+      "kind": "goal",
+      "group": 0,
+      "position": [
+       -3.5,
+       0.0,
+       0.0
+      ],
+      "rotation_like": 0,
+      "red": false,
+      "test": "G",
+      "prediction": "a second normal goal 4.5 units ahead of the start, front towards the ball; rolling straight into it clears the stage"
+     }
+    ],
+    "pools": {
+     "banana": {
+      "records": 5,
+      "offset": "0x14D30",
+      "size": 80
+     },
+     "goal": {
+      "records": 2,
+      "offset": "0x14D80",
+      "size": 104
+     }
+    },
+    "cells": {
+     "banana group 0": {
+      "objects": 5,
+      "cells_rewritten": 110
+     },
+     "goal group 0": {
+      "objects": 2,
+      "cells_rewritten": 90
+     }
+    },
+    "decoded_size_before": 85296,
+    "decoded_size_after": 88688,
+    "decoded_sha256_before": "b61bc5d369ad2cb9511f0d05f1963df6edd1ae72e3b42637ca23da5f05bcdbb6",
+    "decoded_sha256_after": "57e1853f5a09741c2ab86279d29b1c348df866fa49f2d71510876b543663968a",
+    "banana_value": 5
+   }
+  },
+  {
+   "file": "stcoli/smbds_023_stc.lz",
+   "stage_key": "smbds_023",
+   "where": "World 1-2 Sine Wave",
+   "decoded_size": 184992,
+   "decoded_size_after": 187832,
+   "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+   "decoded_sha256_after": "1e3efec60f118e2682256db9a10e165f9f8985e572277da42c01e1b4fa77c5b5",
+   "edits": [
+    {
+     "target": "pool_C[0].position",
+     "field_type": "q12",
+     "offset": "0x140",
+     "width": 12,
+     "old_raw": "00 f8 ff ff 00 08 00 00 33 9f 01 00",
+     "new_raw": "00 00 00 00 00 08 00 00 00 10 02 00",
+     "old_value": [
+      -0.5,
+      0.5,
+      25.949951171875
+     ],
+     "new_value": [
+      0.0,
+      0.5,
+      33.0
+     ],
+     "unchanged": false,
+     "prediction": "CONTROL, lists not updated: banana 1 is drawn 5 units ahead of the start, but the ball rolls through it without collecting it",
+     "decoded_sha256_before": "2bf3047ad54fb0d9ed2853772cfb6e709ca6a7be5a68e4b3f66e015f611a945a",
+     "decoded_sha256_after": "1e06938f80b6b5ec89d07f1fa59eaa868d85b397818a01b2da0ad7a8a6acf9b5"
+    }
+   ],
+   "objects": {
+    "ops": [
+     {
+      "op": "move",
+      "kind": "banana",
+      "index": 11,
+      "from": [
+       -20.55,
+       0.5,
+       -27.05
+      ],
+      "to": [
+       0.0,
+       0.5,
+       30.5
+      ],
+      "test": "D",
+      "prediction": "banana 12 (normally near the goal) is 7.5 units ahead of the start, just past C, lists updated; rolling straight collects it (counter +1) but not C"
+     }
+    ],
+    "pools": {
+     "banana": {
+      "records": 12,
+      "offset": "0x2D2A0",
+      "size": 192
+     }
+    },
+    "cells": {
+     "banana group 0": {
+      "objects": 12,
+      "cells_rewritten": 144
+     }
+    },
+    "decoded_size_before": 184992,
+    "decoded_size_after": 187832,
+    "decoded_sha256_before": "1e06938f80b6b5ec89d07f1fa59eaa868d85b397818a01b2da0ad7a8a6acf9b5",
+    "decoded_sha256_after": "1e3efec60f118e2682256db9a10e165f9f8985e572277da42c01e1b4fa77c5b5",
+    "banana_value": 12
+   }
+  },
+  {
+   "file": "stcoli/smb1_ad02_stc.lz",
+   "stage_key": "smb1_ad02",
+   "where": "World 5-2 Sword",
+   "decoded_size": 261712,
+   "decoded_size_after": 265472,
+   "decoded_sha256_before": "5c581011896a2dd9d61af7a3f01cc0a5fa2697892507e01a1373f3b680155c0f",
+   "decoded_sha256_after": "ad761d9b3b582017fdbe8088b51b5c2ec1363fee02179f3a2cfc6e39493c9a17",
+   "edits": [],
+   "objects": {
+    "ops": [
+     {
+      "op": "add",
+      "kind": "bumper",
+      "group": 0,
+      "position": [
+       0.0,
+       0.0,
+       -20.0
+      ],
+      "test": "E",
+      "prediction": "a new bumper on the blade 5 units in front of the diamond; it bounces the ball"
+     },
+     {
+      "op": "remove",
+      "kind": "bumper",
+      "index": 8,
+      "expect_position": [
+       0,
+       0,
+       -35
+      ],
+      "test": "F",
+      "prediction": "bumper 9 (back tip of the diamond) is gone; the ball passes freely"
+     }
+    ],
+    "pools": {
+     "bumper": {
+      "records": 9,
+      "offset": "0x3FE50",
+      "size": 432
+     }
+    },
+    "cells": {
+     "bumper group 0": {
+      "objects": 9,
+      "cells_rewritten": 164
+     }
+    },
+    "decoded_size_before": 261712,
+    "decoded_size_after": 265472,
+    "decoded_sha256_before": "5c581011896a2dd9d61af7a3f01cc0a5fa2697892507e01a1373f3b680155c0f",
+    "decoded_sha256_after": "ad761d9b3b582017fdbe8088b51b5c2ec1363fee02179f3a2cfc6e39493c9a17",
+    "banana_value": 10
+   }
+  }
+ ],
+ "status": "generated - not yet verified in-game",
+ "plan": {
+  "schema": "trcore.edit_plan/2",
+  "title": "Edit test 3: add / remove / relist objects (W1-1, W1-2, W5-2)",
+  "base_rom_sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17",
+  "stages": [
+   {
+    "stage_key": "smb1_be01",
+    "where": "World 1-1 Elementary",
+    "objects": [
+     {
+      "op": "remove",
+      "kind": "banana",
+      "index": 4,
+      "expect_position": [
+       6,
+       0.5,
+       3.25
+      ],
+      "test": "A",
+      "prediction": "banana 5 (beside the goal, z +3.25) is gone; the other four can still be collected"
+     },
+     {
+      "op": "add",
+      "kind": "banana",
+      "group": 0,
+      "position": [
+       -5.0,
+       0.5,
+       -2.0
+      ],
+      "bunch": false,
+      "test": "B",
+      "prediction": "a new single banana between the start and banana 1, 2 units to the side; it can be collected"
+     },
+     {
+      "op": "add",
+      "kind": "goal",
+      "group": 0,
+      "position": [
+       -3.5,
+       0.0,
+       0.0
+      ],
+      "rotation_like": 0,
+      "red": false,
+      "test": "G",
+      "prediction": "a second normal goal 4.5 units ahead of the start, front towards the ball; rolling straight into it clears the stage"
+     }
+    ]
+   },
+   {
+    "stage_key": "smbds_023",
+    "where": "World 1-2 Sine Wave",
+    "edits": [
+     {
+      "target": "pool_C[0].position",
+      "from": [
+       -0.5,
+       0.5,
+       25.95
+      ],
+      "to": [
+       0.0,
+       0.5,
+       33.0
+      ],
+      "test": "C",
+      "prediction": "CONTROL, lists not updated: banana 1 is drawn 5 units ahead of the start, but the ball rolls through it without collecting it"
+     }
+    ],
+    "objects": [
+     {
+      "op": "move",
+      "kind": "banana",
+      "index": 11,
+      "from": [
+       -20.55,
+       0.5,
+       -27.05
+      ],
+      "to": [
+       0.0,
+       0.5,
+       30.5
+      ],
+      "test": "D",
+      "prediction": "banana 12 (normally near the goal) is 7.5 units ahead of the start, just past C, lists updated; rolling straight collects it (counter +1) but not C"
+     }
+    ]
+   },
+   {
+    "stage_key": "smb1_ad02",
+    "where": "World 5-2 Sword",
+    "objects": [
+     {
+      "op": "add",
+      "kind": "bumper",
+      "group": 0,
+      "position": [
+       0.0,
+       0.0,
+       -20.0
+      ],
+      "test": "E",
+      "prediction": "a new bumper on the blade 5 units in front of the diamond; it bounces the ball"
+     },
+     {
+      "op": "remove",
+      "kind": "bumper",
+      "index": 8,
+      "expect_position": [
+       0,
+       0,
+       -35
+      ],
+      "test": "F",
+      "prediction": "bumper 9 (back tip of the diamond) is gone; the ball passes freely"
+     }
+    ]
+   }
+  ]
+ }
+}

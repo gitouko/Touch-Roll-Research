@@ -397,6 +397,8 @@ class Project:
         except (OSError, ValueError) as exc:
             raise EditorError(f"cannot read {os.path.basename(path)}: {exc}") from None
         plan = data.get("plan") if data.get("schema") == "trcore.rom_patch_record/1" else data
+        if isinstance(plan, dict) and plan.get("schema") == "trcore.edit_plan/2":
+            raise EditorError("this plan adds or removes objects; that needs editor 0.2")
         if not isinstance(plan, dict) or plan.get("schema") != PLAN_SCHEMA:
             raise EditorError("not an edit plan (or a patch record that contains one)")
         if plan.get("base_rom_sha1") and plan["base_rom_sha1"].lower() != self.rom_sha1:

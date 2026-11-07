@@ -1,6 +1,7 @@
 """Apply an edit plan (JSON) to stage files and write a NEW ROM copy.
 
-Plan format (schema "trcore.edit_plan/1"):
+Plan format (schema "trcore.edit_plan/1"; "trcore.edit_plan/2" additionally allows an "objects" list
+per stage with add / remove / move operations, see trcore/stc/objects.py):
 {
   "schema": "trcore.edit_plan/1",
   "title": "short description",
@@ -22,22 +23,35 @@ from typing import Optional
 from . import lz10, romwrite
 from .rom import NdsRom
 from .stc.edit import EditRefused, apply_edits
+from .stc.objects import ObjectEditRefused, apply_object_ops
 
-PLAN_SCHEMA = "trcore.edit_plan/1"
+PLAN_SCHEMA = "trcore.edit_plan/1"          # field edits only
+PLAN_SCHEMA_V2 = "trcore.edit_plan/2"       # field edits + "objects" (add / remove / move, trcore/stc/objects.py)
+PLAN_SCHEMAS = (PLAN_SCHEMA, PLAN_SCHEMA_V2)
+
+
+def check_plan(plan: dict) -> dict:
+    if plan.get("schema") not in PLAN_SCHEMAS:
+        raise EditRefused(f"plan schema must be one of {PLAN_SCHEMAS}")
+    if not plan.get("stages"):
+        raise EditRefused("plan has no stages")
+    for st in plan["stages"]:
+        if st.get("objects") and plan["schema"] != PLAN_SCHEMA_V2:
+            raise EditRefused(f"object operations need schema {PLAN_SCHEMA_V2!r}")
+        if not st.get("edits") and not st.get("objects"):
+            raise EditRefused(f"{st.get('stage_key') or st.get('file')}: nothing to do")
+    return plan
 
 
 def load_plan(path: str) -> dict:
     with open(path, "r", encoding="utf-8") as fh:
         plan = json.load(fh)
-    if plan.get("schema") != PLAN_SCHEMA:
-        raise EditRefused(f"plan schema must be {PLAN_SCHEMA!r}")
-    if not plan.get("stages"):
-        raise EditRefused("plan has no stages")
-    return plan
+    return check_plan(plan)
 
 
 def build_edit_rom(rom_path: str, out_path: str, plan: dict, replace_own: bool = False,
                    extra: Optional[dict] = None) -> dict:
+    check_plan(plan)
     rom = NdsRom.from_file(rom_path)
     sha1 = hashlib.sha1(rom.data).hexdigest()
     if plan.get("base_rom_sha1") and plan["base_rom_sha1"].lower() != sha1:
@@ -55,16 +69,25 @@ def build_edit_rom(rom_path: str, out_path: str, plan: dict, replace_own: bool =
         seen.add(path)
         comp = rom.file_bytes(path)
         dec, _ = lz10.decode(comp)
-        new_dec, recs = apply_edits(dec, st.get("edits", []), st.get("stage_key") or path)
+        label = st.get("stage_key") or path
+        new_dec, recs = apply_edits(dec, st["edits"], label) if st.get("edits") else (dec, [])
+        obj_report = None
+        if st.get("objects"):
+            try:
+                new_dec, obj_report = apply_object_ops(new_dec, st["objects"], label)
+            except ObjectEditRefused as exc:
+                raise EditRefused(f"{label}: {exc}") from None
         new_comp = lz10.encode(new_dec)
+        if lz10.decode(new_comp)[0] != new_dec:
+            raise EditRefused(f"{label}: compressed stage does not decode back to the edited bytes")
         replacements.append((path, new_comp, False))
         stage_records.append({"file": path, "stage_key": st.get("stage_key"), "where": st.get("where"),
-                              "decoded_size": len(dec),
+                              "decoded_size": len(dec), "decoded_size_after": len(new_dec),
                               "decoded_sha256_before": hashlib.sha256(dec).hexdigest(),
                               "decoded_sha256_after": hashlib.sha256(new_dec).hexdigest(),
-                              "edits": recs})
+                              "edits": recs, "objects": obj_report})
     return romwrite.write_rom_copy_multi(
         rom_path, out_path, replacements, note=plan.get("title"),
-        extra={"plan_schema": PLAN_SCHEMA, "stage_edits": stage_records,
+        extra={"plan_schema": plan["schema"], "stage_edits": stage_records,
                "status": "generated - not yet verified in-game", "plan": plan, **(extra or {})},
         replace_own=replace_own)

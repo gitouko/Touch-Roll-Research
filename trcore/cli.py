@@ -415,6 +415,14 @@ def cmd_stage_edit(args) -> int:
         _p(f"{st['where'] or st['file']}:")
         for e in st["edits"]:
             _p(f"  {e['target']} @{e['offset']}: {e['old_value']} -> {e['new_value']}")
+        if st.get("objects"):
+            for op in st["objects"]["ops"]:
+                where = op.get("position") or op.get("to") or op.get("expect_position")
+                _p(f"  {op['op']} {op['kind']}" + (f" {op['index']}" if "index" in op else "") + f" at {where}")
+            for k, v in st["objects"]["cells"].items():
+                _p(f"    {k}: {v['objects']} object(s), {v['cells_rewritten']} cell list(s) rewritten")
+            _p(f"    decoded size {st['decoded_size']} -> {st['decoded_size_after']}, "
+               f"banana value {st['objects']['banana_value']}")
     for r in rec["replacements"]:
         _p(f"  {r['file']}: {r['placement']}, {r['old']['size']} -> {r['new']['size']} bytes")
     _p(f"wrote {args.out}  sha1 {rec['output_rom']['sha1']}")

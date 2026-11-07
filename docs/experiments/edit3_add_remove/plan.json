@@ -1,0 +1,41 @@
+{
+ "schema": "trcore.edit_plan/2",
+ "title": "Edit test 3: add / remove / relist objects (W1-1, W1-2, W5-2)",
+ "base_rom_sha1": "3b0bf7f4e35112cd2d91ffbf2a874aec300d7a17",
+ "stages": [
+  {
+   "stage_key": "smb1_be01",
+   "where": "World 1-1 Elementary",
+   "objects": [
+    {"op": "remove", "kind": "banana", "index": 4, "expect_position": [6, 0.5, 3.25],
+     "test": "A", "prediction": "banana 5 (beside the goal, z +3.25) is gone; the other four can still be collected"},
+    {"op": "add", "kind": "banana", "group": 0, "position": [-5.0, 0.5, -2.0], "bunch": false,
+     "test": "B", "prediction": "a new single banana between the start and banana 1, 2 units to the side; it can be collected"},
+    {"op": "add", "kind": "goal", "group": 0, "position": [-3.5, 0.0, 0.0], "rotation_like": 0, "red": false,
+     "test": "G", "prediction": "a second normal goal 4.5 units ahead of the start, front towards the ball; rolling straight into it clears the stage"}
+   ]
+  },
+  {
+   "stage_key": "smbds_023",
+   "where": "World 1-2 Sine Wave",
+   "edits": [
+    {"target": "pool_C[0].position", "from": [-0.5, 0.5, 25.95], "to": [0.0, 0.5, 33.0],
+     "test": "C", "prediction": "CONTROL, lists not updated: banana 1 is drawn 5 units ahead of the start, but the ball rolls through it without collecting it"}
+   ],
+   "objects": [
+    {"op": "move", "kind": "banana", "index": 11, "from": [-20.55, 0.5, -27.05], "to": [0.0, 0.5, 30.5],
+     "test": "D", "prediction": "banana 12 (normally near the goal) is 7.5 units ahead of the start, just past C, lists updated; rolling straight collects it (counter +1) but not C"}
+   ]
+  },
+  {
+   "stage_key": "smb1_ad02",
+   "where": "World 5-2 Sword",
+   "objects": [
+    {"op": "add", "kind": "bumper", "group": 0, "position": [0.0, 0.0, -20.0],
+     "test": "E", "prediction": "a new bumper on the blade 5 units in front of the diamond; it bounces the ball"},
+    {"op": "remove", "kind": "bumper", "index": 8, "expect_position": [0, 0, -35],
+     "test": "F", "prediction": "bumper 9 (back tip of the diamond) is gone; the ball passes freely"}
+   ]
+  }
+ ]
+}
